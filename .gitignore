@@ -26,3 +26,4 @@ captures/
 .vscode/
 *.keystore
 google-services.json
+.tmp-review/
