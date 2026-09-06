@@ -24,40 +24,19 @@ private val Context.userPrefsDataStore: DataStore<Preferences> by preferencesDat
 
 @Singleton
 class UserPrefsRepository @Inject constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
 ) {
     val prefs: Flow<UserPrefs> = context.userPrefsDataStore.data.map { it.toUserPrefs() }
 
     suspend fun setPerformanceMode(mode: PerformanceMode) {
-        context.userPrefsDataStore.edit { prefs ->
-            val current = prefs.toUserPrefs()
-            if (mode == PerformanceMode.PowerSaver) {
-                prefs[Keys.LAST_NON_SAVER] = current.performanceMode
-                    .takeUnless { it == PerformanceMode.PowerSaver }
-                    ?.name
-                    ?: current.lastNonSaverMode.name
-            } else {
-                prefs[Keys.LAST_NON_SAVER] = mode.name
-            }
-            prefs[Keys.PERFORMANCE_MODE] = mode.name
-        }
+        mutateUserPrefs { it.withPerformanceMode(mode) }
     }
 
     /**
      * G5 one-tap power saver: on → PowerSaver; off → restore lastNonSaverMode.
      */
     suspend fun setPowerSaverEnabled(enabled: Boolean) {
-        context.userPrefsDataStore.edit { prefs ->
-            val current = prefs.toUserPrefs()
-            if (enabled) {
-                if (current.performanceMode != PerformanceMode.PowerSaver) {
-                    prefs[Keys.LAST_NON_SAVER] = current.performanceMode.name
-                }
-                prefs[Keys.PERFORMANCE_MODE] = PerformanceMode.PowerSaver.name
-            } else {
-                prefs[Keys.PERFORMANCE_MODE] = current.lastNonSaverMode.name
-            }
-        }
+        mutateUserPrefs { it.withPowerSaverEnabled(enabled) }
     }
 
     /**
@@ -65,18 +44,7 @@ class UserPrefsRepository @Inject constructor(
      * false restores lastNonSaverMode.
      */
     suspend fun setReduceMotion(enabled: Boolean) {
-        context.userPrefsDataStore.edit { prefs ->
-            val current = prefs.toUserPrefs()
-            prefs[Keys.REDUCE_MOTION] = enabled
-            if (enabled) {
-                if (current.performanceMode != PerformanceMode.PowerSaver) {
-                    prefs[Keys.LAST_NON_SAVER] = current.performanceMode.name
-                }
-                prefs[Keys.PERFORMANCE_MODE] = PerformanceMode.PowerSaver.name
-            } else {
-                prefs[Keys.PERFORMANCE_MODE] = current.lastNonSaverMode.name
-            }
-        }
+        mutateUserPrefs { it.withReduceMotion(enabled) }
     }
 
     suspend fun setDrawerLayout(mode: DrawerLayoutMode) {
@@ -107,6 +75,15 @@ class UserPrefsRepository @Inject constructor(
 
     suspend fun hidePackage(packageName: String, hidden: Boolean) {
         mutateSet(Keys.HIDDEN, packageName, hidden)
+    }
+
+    private suspend fun mutateUserPrefs(transform: (UserPrefs) -> UserPrefs) {
+        context.userPrefsDataStore.edit { prefs ->
+            val next = transform(prefs.toUserPrefs())
+            prefs[Keys.PERFORMANCE_MODE] = next.performanceMode.name
+            prefs[Keys.LAST_NON_SAVER] = next.lastNonSaverMode.name
+            prefs[Keys.REDUCE_MOTION] = next.reduceMotion
+        }
     }
 
     private suspend fun mutateSet(key: Preferences.Key<Set<String>>, value: String, add: Boolean) {

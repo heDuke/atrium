@@ -14,7 +14,7 @@ import javax.inject.Singleton
  */
 @Singleton
 class InstalledAppsRepository @Inject constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
 ) {
     fun queryLauncherApps(): List<AppEntry> {
         val pm = context.packageManager

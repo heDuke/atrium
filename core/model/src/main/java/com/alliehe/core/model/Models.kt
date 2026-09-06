@@ -38,4 +38,57 @@ data class UserPrefs(
     /** Effective motion/performance mode after G3 reduce-motion lock. */
     val effectivePerformanceMode: PerformanceMode
         get() = if (reduceMotion) PerformanceMode.PowerSaver else performanceMode
+
+    /** G5: set tier; entering PowerSaver remembers the prior non-saver tier. */
+    fun withPerformanceMode(mode: PerformanceMode): UserPrefs {
+        val nextLast = when (mode) {
+            PerformanceMode.PowerSaver ->
+                performanceMode.takeUnless { it == PerformanceMode.PowerSaver }
+                    ?: lastNonSaverMode
+            else -> mode
+        }.coerceNonSaver()
+        return copy(performanceMode = mode, lastNonSaverMode = nextLast)
+    }
+
+    /** G5 one-tap power saver: on → PowerSaver; off → restore lastNonSaverMode. */
+    fun withPowerSaverEnabled(enabled: Boolean): UserPrefs =
+        if (enabled) {
+            val nextLast = if (performanceMode != PerformanceMode.PowerSaver) {
+                performanceMode
+            } else {
+                lastNonSaverMode
+            }.coerceNonSaver()
+            copy(
+                performanceMode = PerformanceMode.PowerSaver,
+                lastNonSaverMode = nextLast,
+            )
+        } else {
+            copy(performanceMode = lastNonSaverMode.coerceNonSaver())
+        }
+
+    /**
+     * G3 reduce motion: true forces PowerSaver tier + locks effective mode;
+     * false restores lastNonSaverMode.
+     */
+    fun withReduceMotion(enabled: Boolean): UserPrefs {
+        if (enabled) {
+            val nextLast = if (performanceMode != PerformanceMode.PowerSaver) {
+                performanceMode
+            } else {
+                lastNonSaverMode
+            }.coerceNonSaver()
+            return copy(
+                reduceMotion = true,
+                performanceMode = PerformanceMode.PowerSaver,
+                lastNonSaverMode = nextLast,
+            )
+        }
+        return copy(
+            reduceMotion = false,
+            performanceMode = lastNonSaverMode.coerceNonSaver(),
+        )
+    }
 }
+
+private fun PerformanceMode.coerceNonSaver(): PerformanceMode =
+    takeUnless { it == PerformanceMode.PowerSaver } ?: PerformanceMode.Balanced
