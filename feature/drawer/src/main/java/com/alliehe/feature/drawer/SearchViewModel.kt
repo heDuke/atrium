@@ -26,12 +26,17 @@ class SearchViewModel @Inject constructor(
 
     private val query = MutableStateFlow("")
 
+    init {
+        installedAppsRepository.refresh()
+    }
+
     val uiState: StateFlow<SearchUiState> = combine(
         query,
+        installedAppsRepository.launcherApps,
         userPrefsRepository.prefs,
-    ) { q, prefs ->
+    ) { q, catalog, prefs ->
         val needle = q.trim()
-        val apps = installedAppsRepository.queryLauncherApps()
+        val apps = catalog
             .filterNot { it.packageName in prefs.hiddenPackages }
             .filter { entry ->
                 needle.isEmpty() ||

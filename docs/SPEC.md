@@ -53,11 +53,13 @@
 
 ## Theme / motion
 
-- Colors: Wear Material3 only — `dynamicColorScheme(context)` else library default `ColorScheme()`; **no hand-authored palettes / hardcoded UI colors**
-- Seed/HCT (WFF / user accent) later via official Material APIs only; never a custom ColorScheme builder
+- Colors: Wear Material3 only — **no hand-authored palettes / hardcoded UI colors**
+- **Interim acceptance (Issue #3):** never-null = `dynamicColorScheme(context) ?: ColorScheme()` (library default). Seed/HCT middle tier is tracked; apply only via official Wear/Material APIs (never a custom ColorScheme builder). `:app` may still pass seed from WFF/`ThemeSeedProvider` for future use.
 - Default `MotionScheme.expressive()`; PowerSaver → `standard()`
 - G3 reduce motion forces PowerSaver motion + locks tier; off restores `lastNonSaverMode`
 - Exit power saver restores last non-saver tier (not default Performance)
+
+See also [EXTENSIONS.md](EXTENSIONS.md).
 
 ## Modules
 

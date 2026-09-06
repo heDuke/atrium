@@ -1,6 +1,7 @@
 package com.alliehe.feature.drawer
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -164,17 +165,12 @@ fun DrawerRoute(
                             horizontalArrangement = Arrangement.spacedBy(4.dp),
                         ) {
                             row.forEach { app ->
-                                Button(
-                                    onClick = { AppLauncher.launch(context, app.entry) },
+                                AppGridCell(
+                                    app = app,
+                                    onLaunch = { AppLauncher.launch(context, app.entry) },
+                                    onOpenActions = { actionsTarget = app },
                                     modifier = Modifier.weight(1f),
-                                ) {
-                                    Text(
-                                        text = app.entry.label,
-                                        maxLines = 2,
-                                        overflow = TextOverflow.Ellipsis,
-                                        textAlign = TextAlign.Center,
-                                    )
-                                }
+                                )
                             }
                             repeat(gridColumns - row.size) {
                                 Spacer(modifier = Modifier.weight(1f))
@@ -209,6 +205,35 @@ private fun AppListRow(
             )
         }
         TextButton(onClick = onOpenActions) {
+            Text(stringResource(R.string.drawer_app_actions))
+        }
+    }
+}
+
+/** Grid cell with F2 actions affordance (parity with list overflow). */
+@Composable
+private fun AppGridCell(
+    app: DrawerAppItem,
+    onLaunch: () -> Unit,
+    onOpenActions: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier = modifier) {
+        Button(
+            onClick = onLaunch,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text(
+                text = app.entry.label,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Center,
+            )
+        }
+        TextButton(
+            onClick = onOpenActions,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
             Text(stringResource(R.string.drawer_app_actions))
         }
     }

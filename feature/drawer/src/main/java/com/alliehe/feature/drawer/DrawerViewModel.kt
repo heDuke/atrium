@@ -10,7 +10,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -31,31 +31,35 @@ class DrawerViewModel @Inject constructor(
     private val userPrefsRepository: UserPrefsRepository,
 ) : ViewModel() {
 
-    val uiState: StateFlow<DrawerUiState> = userPrefsRepository.prefs
-        .map { prefs ->
-            val visible = installedAppsRepository.queryLauncherApps()
-                .filterNot { it.packageName in prefs.hiddenPackages }
-            val sorted = visible.sortedWith(
-                compareByDescending<AppEntry> { it.packageName in prefs.pinnedPackages }
-                    .thenByDescending { it.packageName in prefs.favoritePackages }
-                    .thenBy { it.label.lowercase() },
-            )
-            DrawerUiState(
-                apps = sorted.map { entry ->
-                    DrawerAppItem(
-                        entry = entry,
-                        pinned = entry.packageName in prefs.pinnedPackages,
-                        favorite = entry.packageName in prefs.favoritePackages,
-                    )
-                },
-                layout = prefs.drawerLayout,
-            )
-        }
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5_000),
-            initialValue = DrawerUiState(),
+    init {
+        installedAppsRepository.refresh()
+    }
+
+    val uiState: StateFlow<DrawerUiState> = combine(
+        installedAppsRepository.launcherApps,
+        userPrefsRepository.prefs,
+    ) { catalog, prefs ->
+        val visible = catalog.filterNot { it.packageName in prefs.hiddenPackages }
+        val sorted = visible.sortedWith(
+            compareByDescending<AppEntry> { it.packageName in prefs.pinnedPackages }
+                .thenByDescending { it.packageName in prefs.favoritePackages }
+                .thenBy { it.label.lowercase() },
         )
+        DrawerUiState(
+            apps = sorted.map { entry ->
+                DrawerAppItem(
+                    entry = entry,
+                    pinned = entry.packageName in prefs.pinnedPackages,
+                    favorite = entry.packageName in prefs.favoritePackages,
+                )
+            },
+            layout = prefs.drawerLayout,
+        )
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5_000),
+        initialValue = DrawerUiState(),
+    )
 
     fun setPinned(packageName: String, pinned: Boolean) {
         viewModelScope.launch { userPrefsRepository.pinPackage(packageName, pinned) }

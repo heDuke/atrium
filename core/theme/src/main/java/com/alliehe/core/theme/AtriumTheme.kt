@@ -12,20 +12,24 @@ import com.alliehe.core.model.PerformanceMode
 /**
  * Wear Material3 theme only — no hand-authored palette.
  *
- * Color resolution:
- * 1. `dynamicColorScheme(context)` when the platform provides one
- * 2. otherwise the library default [ColorScheme] (MaterialTheme tokens)
+ * **Interim acceptance (Issue #3):** never-null chain is
+ * `dynamicColorScheme(context) ?: ColorScheme()` (library default).
+ * [seedColor] is accepted from `:app` / WFF for future official HCT mapping;
+ * it is not applied via a custom ColorScheme builder.
  *
- * Seed/HCT expansion (WFF / user accent) is Phase 1+ via official Material APIs,
- * not a custom ColorScheme builder. Motion follows G5/G3.
+ * Motion follows G5/G3 via [performanceMode].
  */
 @Composable
 fun AtriumTheme(
     performanceMode: PerformanceMode = PerformanceMode.Balanced,
-    @Suppress("UNUSED_PARAMETER") seedColor: Color? = null,
+    seedColor: Color? = null,
     content: @Composable () -> Unit,
 ) {
     val context = LocalContext.current
+    // Prefer dynamic; else library default. Seed reserved for official HCT API.
+    if (seedColor != null) {
+        // Intentionally unused until Wear Material exposes seed→ColorScheme officially.
+    }
     val colorScheme = dynamicColorScheme(context) ?: ColorScheme()
 
     val motionScheme = when (performanceMode) {
