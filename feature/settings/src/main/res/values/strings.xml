@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_title">设置</string>
+    <string name="settings_placeholder">省电、无障碍与引导将在后续阶段接入</string>
+</resources>

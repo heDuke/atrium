@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Store copy: wrist app atrium / drawer. Do not claim "replace system launcher". -->
+    <string name="app_name">中庭</string>
+    <string name="app_name_en">Atrium</string>
+    <string name="tile_label">中庭</string>
+    <string name="nav_settings">设置</string>
+    <string name="nav_search">搜索</string>
+    <string name="drawer_empty_title">暂无应用</string>
+    <string name="drawer_empty_hint">安装带启动入口的应用后会出现在这里</string>
+    <string name="settings_title">设置</string>
+    <string name="settings_placeholder">省电、无障碍与引导将在后续阶段接入</string>
+    <string name="tile_placeholder_title">中庭</string>
+    <string name="tile_placeholder_body">打开应用抽屉</string>
+</resources>
