@@ -8,6 +8,7 @@ import androidx.activity.viewModels
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.alliehe.atrium.theme.ThemeSeedProvider
 import com.alliehe.atrium.theme.ThemeViewModel
 import com.alliehe.atrium.ui.AtriumRoot
 import com.alliehe.core.theme.AtriumTheme
@@ -26,10 +27,10 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             val themePrefs by themeViewModel.themePrefs.collectAsStateWithLifecycle()
-            val seedColor = themePrefs.seedColorArgb?.let { Color(it.toInt()) }
+            val seedArgb = ThemeSeedProvider.resolveSeedArgb(themePrefs.seedColorArgb)
             AtriumTheme(
                 performanceMode = themePrefs.performanceMode,
-                seedColor = seedColor,
+                seedColor = seedArgb?.let { Color(it.toInt()) },
             ) {
                 AtriumRoot()
             }

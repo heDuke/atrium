@@ -4,4 +4,5 @@ object Routes {
     const val DRAWER = "drawer"
     const val SEARCH = "search"
     const val SETTINGS = "settings"
+    const val ONBOARDING = "onboarding"
 }

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      G5 tile freshness (elapsed ms). Mapped from UserPrefs.effectivePerformanceMode
+      in AtriumTileService. Values are platform hints; system may throttle.
+      Performance: frequent (≥1 min). Balanced: default. PowerSaver: longer.
+    -->
+    <integer name="tile_freshness_performance_ms">60000</integer>
+    <integer name="tile_freshness_balanced_ms">900000</integer>
+    <integer name="tile_freshness_power_saver_ms">3600000</integer>
+</resources>

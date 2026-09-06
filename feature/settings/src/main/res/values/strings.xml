@@ -1,5 +1,32 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="settings_title">设置</string>
-    <string name="settings_placeholder">省电、无障碍与引导将在后续阶段接入</string>
+
+    <string name="settings_section_layout">布局</string>
+    <string name="settings_drawer_grid">网格抽屉</string>
+    <string name="settings_drawer_grid_secondary">关闭则为列表</string>
+
+    <string name="settings_section_performance">性能与省电</string>
+    <string name="settings_mode_performance">性能</string>
+    <string name="settings_mode_balanced">均衡</string>
+    <string name="settings_mode_power_saver">省电</string>
+    <string name="settings_power_saver_toggle">一键省电</string>
+    <string name="settings_power_saver_secondary">退出后恢复上一档位</string>
+    <string name="settings_mode_locked_by_a11y">减弱动态效果已锁定省电动效</string>
+
+    <string name="settings_section_a11y">无障碍</string>
+    <string name="settings_reduce_motion">减弱动态效果</string>
+    <string name="settings_reduce_motion_secondary">强制省电动效档位</string>
+
+    <string name="settings_section_optional">可选</string>
+    <string name="settings_set_default_launcher">设为默认主屏幕应用</string>
+    <string name="settings_set_default_launcher_secondary">仅在系统支持时显示</string>
+
+    <string name="onboarding_title">欢迎使用中庭</string>
+    <string name="onboarding_intro">中庭是腕上应用抽屉，不是系统主屏幕替换。</string>
+    <string name="onboarding_drawer">在抽屉中浏览已安装应用，可切换列表或网格。</string>
+    <string name="onboarding_tile_title">如何添加快捷功能块</string>
+    <string name="onboarding_tile_body">在表盘向下轻扫打开功能块托盘，点按编辑，再添加「中庭」。添加、移除与排序由系统完成；本应用只提供内容。</string>
+    <string name="onboarding_power">可在设置中开启一键省电或减弱动态效果。</string>
+    <string name="onboarding_done">开始使用</string>
 </resources>

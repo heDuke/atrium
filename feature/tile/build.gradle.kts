@@ -24,6 +24,7 @@ kotlin {
 
 dependencies {
     implementation(project(":core:model"))
+    implementation(project(":core:data"))
     implementation(libs.androidx.core.ktx)
     implementation(libs.wear.tiles)
     implementation(libs.protolayout)

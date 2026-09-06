@@ -3,6 +3,14 @@
 
     <uses-feature android:name="android.hardware.type.watch" />
 
+    <!-- Package visibility for F1/G1 MAIN+LAUNCHER queries (Android 11+). -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
+    </queries>
+
     <application
         android:name=".AtriumApp"
         android:allowBackup="true"
