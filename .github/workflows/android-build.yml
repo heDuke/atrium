@@ -33,10 +33,13 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4
 
-      - name: Install SDK packages
-        run: sdkmanager 'platforms;android-37' 'build-tools;36.0.0'
+      # AGP resolves compileSdk's platform package and installs it when needed.
+      # Do not assume its SDK Manager path is platforms;android-37.
+      - name: Install Build Tools
+        run: sdkmanager 'build-tools;36.0.0'
 
       - name: Set up Gradle and cache
+        id: gradle
         uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6
         with:
           cache-read-only: ${{ github.ref != 'refs/heads/main' }}
@@ -45,7 +48,7 @@ jobs:
         run: bash gradlew :app:assembleDebug :app:assembleRelease --no-daemon --stacktrace
 
       - name: Upload Debug APK
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && hashFiles('app/build/outputs/apk/debug/*.apk') != '' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: atrium-debug-${{ github.sha }}
@@ -54,7 +57,7 @@ jobs:
           retention-days: 14
 
       - name: Upload unsigned Release APK
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && hashFiles('app/build/outputs/apk/release/*-unsigned.apk') != '' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: atrium-release-unsigned-${{ github.sha }}
@@ -63,11 +66,11 @@ jobs:
           retention-days: 14
 
       - name: Run unit tests
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && steps.gradle.outcome == 'success' }}
         run: bash gradlew testDebugUnitTest --no-daemon --stacktrace
 
       - name: Run Android Lint
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && steps.gradle.outcome == 'success' }}
         run: bash gradlew :app:lintDebug --no-daemon --stacktrace
 
       - name: Upload test and Lint reports
