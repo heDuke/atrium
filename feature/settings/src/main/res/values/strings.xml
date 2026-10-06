@@ -1,32 +1,36 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="settings_title">设置</string>
-
     <string name="settings_section_layout">布局</string>
     <string name="settings_drawer_grid">网格抽屉</string>
     <string name="settings_drawer_grid_secondary">关闭则为列表</string>
-
-    <string name="settings_section_performance">性能与省电</string>
+    <string name="settings_section_performance">动效与功能块刷新</string>
     <string name="settings_mode_performance">性能</string>
     <string name="settings_mode_balanced">均衡</string>
     <string name="settings_mode_power_saver">省电</string>
     <string name="settings_power_saver_toggle">一键省电</string>
     <string name="settings_power_saver_secondary">退出后恢复上一档位</string>
     <string name="settings_mode_locked_by_a11y">减弱动态效果已锁定省电动效</string>
-
     <string name="settings_section_a11y">无障碍</string>
     <string name="settings_reduce_motion">减弱动态效果</string>
-    <string name="settings_reduce_motion_secondary">强制省电动效档位</string>
-
+    <string name="settings_reduce_motion_secondary">使用标准动效并锁定档位；关闭后恢复上一档位</string>
     <string name="settings_section_optional">可选</string>
-    <string name="settings_set_default_launcher">设为默认主屏幕应用</string>
-    <string name="settings_set_default_launcher_secondary">仅在系统支持时显示</string>
-
+    <string name="settings_set_default_launcher">设为默认启动器</string>
+    <string name="settings_set_default_launcher_secondary">由系统请求授权；实体按键行为取决于设备</string>
     <string name="onboarding_title">欢迎使用中庭</string>
-    <string name="onboarding_intro">中庭是腕上应用抽屉，不是系统主屏幕替换。</string>
-    <string name="onboarding_drawer">在抽屉中浏览已安装应用，可切换列表或网格。</string>
+    <string name="onboarding_intro">中庭是腕上启动器，可浏览并打开已安装应用。</string>
+    <string name="onboarding_drawer">点按应用打开，长按管理。可在设置中切换列表和网格、恢复隐藏应用。</string>
     <string name="onboarding_tile_title">如何添加快捷功能块</string>
-    <string name="onboarding_tile_body">在表盘向下轻扫打开功能块托盘，点按编辑，再添加「中庭」。添加、移除与排序由系统完成；本应用只提供内容。</string>
-    <string name="onboarding_power">可在设置中开启一键省电或减弱动态效果。</string>
+    <string name="onboarding_tile_body">从表盘左右滑动进入功能块，长按进入编辑并添加“中庭”。具体入口因设备而异。</string>
+    <string name="onboarding_power">在设置中申请设为默认启动器；设备不支持时仍可使用抽屉和功能块。</string>
     <string name="onboarding_done">开始使用</string>
+    <string name="settings_home_granted">中庭已设为默认启动器</string>
+    <string name="settings_home_not_granted">未设为默认启动器，仍可打开应用抽屉</string>
+    <string name="settings_home_unavailable">此设备未开放默认启动器授权，可继续使用应用抽屉。</string>
+    <string name="settings_hidden_apps">隐藏的应用</string>
+    <string name="settings_restore_hidden">点按取消隐藏</string>
+    <string name="settings_hidden_hint">点按应用可恢复显示。卸载后的记录会保留，重装后仍保持原设置。</string>
+    <string name="settings_hidden_empty">没有已安装的隐藏应用</string>
+    <string name="settings_save_failed">设置保存失败，请重试</string>
+    <string name="onboarding_saving">正在保存…</string>
 </resources>

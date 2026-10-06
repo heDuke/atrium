@@ -1,18 +1,19 @@
 package com.alliehe.feature.drawer
 
-import androidx.compose.foundation.layout.Box
+import android.app.Activity
+import android.app.RemoteInput
+import android.content.ActivityNotFoundException
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -23,106 +24,97 @@ import androidx.wear.compose.foundation.lazy.items
 import androidx.wear.compose.foundation.lazy.rememberTransformingLazyColumnState
 import androidx.wear.compose.material3.Button
 import androidx.wear.compose.material3.ListHeader
-import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.ScreenScaffold
+import androidx.wear.compose.material3.SurfaceTransformation
 import androidx.wear.compose.material3.Text
 import androidx.wear.compose.material3.lazy.rememberTransformationSpec
 import androidx.wear.compose.material3.lazy.transformedHeight
+import androidx.wear.input.RemoteInputIntentHelper
+import com.alliehe.core.model.componentKey
+import com.alliehe.core.theme.TransformingContent
 
-/**
- * G1 in-app search: filter MAIN+LAUNCHER by query; Button result rows.
- * Query field uses Foundation BasicTextField styled with Wear MaterialTheme tokens
- * (Wear Material3 has no TextField).
- */
+private const val SEARCH_INPUT_KEY = "search_query"
+
 @Composable
-fun SearchRoute(
-    viewModel: SearchViewModel = hiltViewModel(),
-) {
+fun SearchRoute(viewModel: SearchViewModel = hiltViewModel()) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val listState = rememberTransformingLazyColumnState()
-    val transformationSpec = rememberTransformationSpec()
+    val spec = rememberTransformationSpec()
     val queryHint = stringResource(R.string.search_query_hint)
-
-    ScreenScaffold(scrollState = listState) { contentPadding ->
-        TransformingLazyColumn(
-            state = listState,
-            contentPadding = contentPadding,
-            modifier = Modifier.fillMaxSize(),
-        ) {
+    val inputLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            result.data?.let { RemoteInput.getResultsFromIntent(it)?.getCharSequence(SEARCH_INPUT_KEY) }
+                ?.let { viewModel.onQueryChange(it.toString()) }
+        }
+    }
+    ScreenScaffold(scrollState = listState) { padding ->
+        TransformingLazyColumn(state = listState, contentPadding = padding, modifier = Modifier.fillMaxSize()) {
             item {
-                ListHeader {
-                    Text(
-                        text = stringResource(R.string.drawer_search_title),
-                        style = MaterialTheme.typography.titleLarge,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
+                ListHeader(modifier = Modifier.fillMaxWidth().transformedHeight(this, spec),
+                    transformation = SurfaceTransformation(spec)) {
+                    Text(stringResource(R.string.drawer_search_title))
                 }
             }
             item {
-                val onSurface = MaterialTheme.colorScheme.onSurface
-                val onVariant = MaterialTheme.colorScheme.onSurfaceVariant
-                val bodyStyle = MaterialTheme.typography.bodyLarge
-                BasicTextField(
-                    value = uiState.query,
-                    onValueChange = viewModel::onQueryChange,
-                    singleLine = true,
-                    textStyle = bodyStyle.copy(color = onSurface),
-                    cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                    decorationBox = { inner ->
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 8.dp, vertical = 6.dp),
-                        ) {
-                            if (uiState.query.isEmpty()) {
-                                Text(
-                                    text = queryHint,
-                                    style = bodyStyle,
-                                    color = onVariant,
-                                )
-                            }
-                            inner()
+                Button(
+                    onClick = {
+                        val intent = RemoteInputIntentHelper.createActionRemoteInputIntent()
+                        RemoteInputIntentHelper.putRemoteInputsExtra(intent,
+                            listOf(RemoteInput.Builder(SEARCH_INPUT_KEY).setLabel(queryHint).build()))
+                        try {
+                            inputLauncher.launch(intent)
+                        } catch (_: ActivityNotFoundException) {
+                            Toast.makeText(context, R.string.search_input_unavailable, Toast.LENGTH_SHORT).show()
+                        } catch (_: SecurityException) {
+                            Toast.makeText(context, R.string.search_input_unavailable, Toast.LENGTH_SHORT).show()
                         }
                     },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .transformedHeight(this, transformationSpec),
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).transformedHeight(this, spec),
+                    transformation = SurfaceTransformation(spec),
+                    label = { Text(uiState.query.ifBlank { queryHint }, maxLines = 2, overflow = TextOverflow.Ellipsis) },
+                    secondaryLabel = { Text(stringResource(R.string.search_edit_hint)) },
                 )
             }
-
-            if (uiState.results.isEmpty()) {
+            if (uiState.query.isNotEmpty()) {
                 item {
-                    Text(
-                        text = stringResource(R.string.search_no_results),
-                        style = MaterialTheme.typography.bodyMedium,
-                        textAlign = TextAlign.Center,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .transformedHeight(this, transformationSpec),
-                    )
-                }
-            } else {
-                items(
-                    items = uiState.results,
-                    key = { it.packageName + "/" + it.activityName },
-                ) { entry ->
-                    Button(
-                        onClick = { AppLauncher.launch(context, entry) },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .transformedHeight(this, transformationSpec),
-                    ) {
-                        Text(
-                            text = entry.label,
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis,
-                        )
+                    Button(onClick = { viewModel.onQueryChange("") },
+                        modifier = Modifier.fillMaxWidth().transformedHeight(this, spec),
+                        transformation = SurfaceTransformation(spec)) {
+                        Text(stringResource(R.string.search_clear))
                     }
                 }
+            }
+            if (uiState.refreshFailed) {
+                item {
+                    Button(onClick = viewModel::refresh,
+                        modifier = Modifier.fillMaxWidth().transformedHeight(this, spec),
+                        transformation = SurfaceTransformation(spec)) { Text(stringResource(R.string.catalog_retry)) }
+                }
+            }
+            if (uiState.loading || uiState.results.isEmpty()) {
+                item {
+                    TransformingContent(SurfaceTransformation(spec), Modifier.fillMaxWidth().transformedHeight(this, spec)) {
+                        Text(stringResource(when {
+                            uiState.loading -> R.string.catalog_loading
+                            uiState.query.isBlank() -> R.string.drawer_empty_hint
+                            else -> R.string.search_no_results
+                        }), textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+                    }
+                }
+            } else items(uiState.results, key = { it.componentKey }) { entry ->
+                Button(
+                    onClick = {
+                        if (AppLauncher.launch(context, entry) != LaunchResult.Started) {
+                            Toast.makeText(context, R.string.launch_failed, Toast.LENGTH_SHORT).show()
+                            viewModel.refresh()
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth().transformedHeight(this, spec),
+                    transformation = SurfaceTransformation(spec),
+                    icon = { AppIcon(uiState.icons[entry.componentKey], entry.label) },
+                    label = { Text(entry.label, maxLines = 2, overflow = TextOverflow.Ellipsis) },
+                )
             }
         }
     }

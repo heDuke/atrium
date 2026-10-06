@@ -10,7 +10,7 @@
 - No Horologist artifacts
 - No phone Material3 / Wear Material 2.5 in App or Tile UI trees
 - App UI = Wear Compose Material3; Tile = ProtoLayout Material3 (separate trees)
-- Pseudo-launcher only — not system Home; no OEM / power / crown assumptions
+- Launcher with optional system Home role; no OEM / power / crown routing assumptions
 
 ## Internal seams (current)
 

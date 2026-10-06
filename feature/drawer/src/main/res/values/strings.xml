@@ -3,7 +3,7 @@
     <string name="drawer_title">中庭</string>
     <string name="drawer_search_title">搜索</string>
     <string name="drawer_empty_title">暂无应用</string>
-    <string name="drawer_empty_hint">安装带启动入口的应用后会出现在这里</string>
+    <string name="drawer_empty_hint">没有可见应用。可安装应用，或在设置中恢复隐藏应用。</string>
     <string name="drawer_open_settings">设置</string>
     <string name="drawer_open_search">搜索</string>
     <string name="search_query_hint">输入应用名</string>
@@ -16,4 +16,18 @@
     <string name="drawer_actions_title">应用操作</string>
     <string name="drawer_actions_dismiss">关闭</string>
     <string name="drawer_app_actions">操作</string>
+    <string name="drawer_gesture_hint">点按打开，长按管理</string>
+    <string name="drawer_app_actions_for">%1$s，更多操作</string>
+    <string name="app_pinned">已置顶</string>
+    <string name="app_favorite">已收藏</string>
+    <string name="app_pinned_favorite">已置顶 · 已收藏</string>
+    <string name="drawer_hide_hint">可在设置的“隐藏的应用”中恢复</string>
+    <string name="app_not_visible">应用已隐藏或不可用，可在设置中管理隐藏应用。</string>
+    <string name="launch_failed">应用无法打开，请重试或检查是否已卸载／禁用</string>
+    <string name="prefs_save_failed">设置保存失败，请重试</string>
+    <string name="catalog_loading">正在读取应用…</string>
+    <string name="catalog_retry">读取应用失败，点按重试</string>
+    <string name="search_edit_hint">点按使用系统输入</string>
+    <string name="search_clear">清除关键词</string>
+    <string name="search_input_unavailable">系统输入不可用，请检查手表输入设置</string>
 </resources>

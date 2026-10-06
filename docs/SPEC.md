@@ -1,81 +1,55 @@
-# Atrium（中庭）— SPEC
-
-> Locked for grok build. Brand + Wear M3 only + zero Horologist.
-
-## Brand
-
-| Item | Value |
-|------|--------|
-| EN | Atrium |
-| ZH display | 中庭 |
-| applicationId | `com.alliehe.atrium` |
-| Store copy | Wrist app atrium / drawer; **never** “replace system launcher”; avoid Launcher in main title |
-| Packages | Root + applicationId use atrium; feature modules use `com.alliehe.feature.*` (no brand in feature packages) |
+# Atrium（中庭）— Launcher specification
 
 ## Positioning
 
-- Pseudo-launcher (`MAIN`+`LAUNCHER`), **not** system Home
-- No OEM privileges; no power-button / crown assumptions
-- When not default Home, F1–F9 + WFF + G1–G3 + G5 must still work fully
-- F11 optional bonus only
+Wear OS launcher with a normal application-drawer entry. Register MAIN/HOME/DEFAULT
+and MAIN/LAUNCHER on one reusable activity. Home-role availability and hardware
+button routing depend on the system; no OEM privileges are assumed.
+When not default Home, drawer, search, settings, onboarding and Tile remain usable.
 
-## Must ship
+## User flows
 
-- F1 drawer list/grid (Wear M3 Scaffold + TLC + Button family)
-- F2 pin / favorite / hide (`:core:data` UserPrefs)
-- F4 Tile multi-density (ProtoLayout M3; system owns add/remove/reorder)
-- F7 MAIN+LAUNCHER + correct Recents (no trampoline)
-- F9 SwipeDismissableNavHost + system swipe-to-dismiss
-- WFF built-in face; feed color into theme; future open faces WFF-only
+- List/grid display exported MAIN/LAUNCHER entries, excluding Atrium itself.
+- Tap launches the exact resolved component in the target app task.
+- Long press opens management; TalkBack has an equivalent custom action.
+- Pin/favorite/hide are package-level preferences. Component-level list keys avoid collisions.
+- Pin precedes favorite; alphabetical ordering is deterministic. Search also matches packages.
+- Hidden apps are excluded from drawer/search and can be restored from settings.
+- Uninstall does not remove preferences; reinstall restores them. Hidden management shows installed entries.
+- Home reuses MainActivity and returns from subpages to the drawer; incomplete onboarding is retained.
+- Home-root system Back does not finish the launcher; normal app entry allows root exit.
+- First-run completion waits for durable DataStore write before navigation.
+- Package broadcasts and foreground resume refresh asynchronously, with conflated requests.
 
-## This version also
+## UI and dependencies
 
-- G1 in-app search
-- G2 first-run (include how to add Tile)
-- G3 a11y (system type scale; reduce motion)
-- G5 one-tap power saver + tiers (Performance / Balanced / PowerSaver; same store as G3)
-- F11 optional: runtime probe for “set as default”; hide if unsupported; never block
+- App: Wear Compose Material3, foundation/TransformingLazyColumn and Wear Navigation.
+- Tile: ProtoLayout Material3, a separate tree; system owns add/remove/reorder.
+- No Horologist, phone Material3 or Wear Material 2.5 UI.
+- Existing Hilt, DataStore and coroutines; Wear input for RemoteInput.
+- Resource-based user strings, theme tokens for UI colors.
+- Match transformedHeight with SurfaceTransformation. Text/groups apply container and content layers;
+  grid row children are not separately transformed. EdgeButton stays in ScreenScaffold's slot.
+- List uses icons/name/status; grid uses icons/name/status with a long-press hint.
+- Performance modes use accessible RadioButton selection in a selectable group.
+- Interactive targets at least 48dp; validate round clipping, large fonts and rotary input on devices.
 
-## Deferred / out
+## Theme/motion
 
-- Later: F3 folders, F5 Glance, F6/F8, F10, G4 Auto Backup; then G4 export fallback
-- Not: G6 phone companion; system Home; rewriting system app list / notifications / QS
-
-## Dependency rules
-
-- App: `androidx.wear.compose` + `wear.compose.material3` (+ foundation / TransformingLazyColumn)
-- Tile: `protolayout-material3` only (separate UI tree)
-- **No Horologist artifacts at all**
-- No phone Material3, no Wear M2.5
-- Prefer stock M3 widgets; no custom components unless thin wrappers on M3 tokens
-- **No hardcoded user-facing strings** — use `res/values/strings.xml`
-- **No hardcoded UI colors** — Wear `MaterialTheme` / `dynamicColorScheme` only
-
-## Theme / motion
-
-- Colors: Wear Material3 only — **no hand-authored palettes / hardcoded UI colors**
-- **Interim acceptance (Issue #3):** never-null = `dynamicColorScheme(context) ?: ColorScheme()` (library default). Seed/HCT middle tier is tracked; apply only via official Wear/Material APIs (never a custom ColorScheme builder). `:app` may still pass seed from WFF/`ThemeSeedProvider` for future use.
-- Default `MotionScheme.expressive()`; PowerSaver → `standard()`
-- G3 reduce motion forces PowerSaver motion + locks tier; off restores `lastNonSaverMode`
-- Exit power saver restores last non-saver tier (not default Performance)
-
-See also [EXTENSIONS.md](EXTENSIONS.md).
+- `dynamicColorScheme(context) ?: ColorScheme()`; no hand-authored UI palette.
+- WFF seed remains reserved and is not currently applied to the palette.
+- Performance/Balanced use expressive motion; PowerSaver uses standard motion.
+- Reduce motion forces PowerSaver and locks controls; closing restores lastNonSaverMode.
+- No promise of disabling every animation or measured battery savings.
+- Performance modes also set Tile freshness hints; system may throttle.
 
 ## Modules
 
-```
-:app
-:feature:drawer | settings | tile | watchface
-:core:theme | data | model | navigation
-```
-
-- Features do not depend on each other
-- F2 only in `:core:data` UserPrefs
-- WFF seed injected via ThemeRepository / `:app`; `:core:theme` does not depend on watchface
-- No `:core:horologist-*`
+`:app` assembles `:feature:drawer/settings/tile/watchface` and `:core:model/data/theme/navigation`.
+Features do not depend on each other. User preference identity remains in core:data/model.
+WFF remains a documented stub; full watchface binaries and public extension SDK are deferred.
 
 ## Acceptance
 
-1. Not default Home → F1–F9 + WFF + G1–G3 + G5 still complete  
-2. G5 exit power saver → previous non-saver tier  
-3. F4 content only; add Tile via G2; never claim strip reorder ownership  
+See [VALIDATION](VALIDATION.md). A successful source review is not a substitute for
+Gradle compilation, a Home-role authorization test or Pixel Watch 3 hardware testing.

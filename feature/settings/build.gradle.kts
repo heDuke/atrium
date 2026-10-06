@@ -31,6 +31,7 @@ kotlin {
 
 dependencies {
     implementation(project(":core:model"))
+    implementation(project(":core:theme"))
     implementation(project(":core:data"))
     implementation(project(":core:navigation"))
 

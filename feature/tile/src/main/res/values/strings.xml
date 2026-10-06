@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="tile_placeholder_title">中庭</string>
-    <string name="tile_placeholder_body">打开应用抽屉</string>
-    <string name="tile_open_drawer">打开</string>
+    <string name="tile_placeholder_body">你的腕上应用</string>
+    <string name="tile_open_drawer">打开抽屉</string>
     <string name="tile_open_drawer_cd">打开中庭应用抽屉</string>
 </resources>

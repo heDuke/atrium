@@ -31,10 +31,13 @@ kotlin {
 
 dependencies {
     implementation(project(":core:model"))
+    implementation(project(":core:theme"))
     implementation(project(":core:data"))
     implementation(project(":core:navigation"))
 
     implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.activity.compose)
+    implementation(libs.wear.input)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)

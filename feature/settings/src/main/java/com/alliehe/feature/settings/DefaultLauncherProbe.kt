@@ -1,49 +1,28 @@
 package com.alliehe.feature.settings
 
+import android.app.role.RoleManager
 import android.content.Context
 import android.content.Intent
 
-/**
- * F11 optional: runtime probe for set-as-default (ROLE_HOME).
- *
- * Uses reflection so missing RoleManager stubs / Wear builds still compile;
- * unsupported devices simply hide the row. Request failures are swallowed —
- * never block core flows.
- */
+enum class HomeRoleState { Unsupported, Available, Held }
+
+/** Role availability is a device capability, not a promise about physical button routing. */
 object DefaultLauncherProbe {
-
-    private const val ROLE_HOME = "android.app.role.HOME"
-    private const val ROLE_MANAGER_CLASS = "android.app.RoleManager"
-
-    fun isAvailable(context: Context): Boolean {
-        return createRequestIntent(context) != null
+    fun state(context: Context): HomeRoleState = try {
+        val manager = context.getSystemService(RoleManager::class.java)
+        when {
+            manager == null || !manager.isRoleAvailable(RoleManager.ROLE_HOME) -> HomeRoleState.Unsupported
+            manager.isRoleHeld(RoleManager.ROLE_HOME) -> HomeRoleState.Held
+            else -> HomeRoleState.Available
+        }
+    } catch (_: RuntimeException) {
+        HomeRoleState.Unsupported
     }
 
-    /**
-     * Builds the role-request intent, or null if unavailable / any failure.
-     */
-    fun createRequestIntent(context: Context): Intent? {
-        return try {
-            val roleManagerClass = Class.forName(ROLE_MANAGER_CLASS)
-            val roleManager = context.getSystemService(roleManagerClass) ?: return null
-
-            val available = roleManagerClass
-                .getMethod("isRoleAvailable", String::class.java)
-                .invoke(roleManager, ROLE_HOME) as? Boolean
-                ?: return null
-            if (!available) return null
-
-            val held = roleManagerClass
-                .getMethod("isRoleHeld", String::class.java)
-                .invoke(roleManager, ROLE_HOME) as? Boolean
-                ?: return null
-            if (held) return null
-
-            roleManagerClass
-                .getMethod("createRequestRoleIntent", String::class.java)
-                .invoke(roleManager, ROLE_HOME) as? Intent
-        } catch (_: Throwable) {
-            null
-        }
+    fun createRequestIntent(context: Context): Intent? = try {
+        if (state(context) != HomeRoleState.Available) null
+        else context.getSystemService(RoleManager::class.java)?.createRequestRoleIntent(RoleManager.ROLE_HOME)
+    } catch (_: RuntimeException) {
+        null
     }
 }

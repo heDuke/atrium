@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Store copy: wrist app atrium / drawer. Do not claim "replace system launcher". -->
+    <!-- Wear OS launcher; Home role availability remains device-dependent. -->
     <string name="app_name">中庭</string>
     <string name="app_name_en">Atrium</string>
     <string name="tile_label">中庭</string>
