@@ -33,6 +33,11 @@ Gradle wrapper 下载 `gradle-9.7.0-bin.zip` 时返回 `java.net.SocketException
 
 ## Pixel Watch 3 待验收（未执行）
 
+GitHub Actions 新增 `Android build` 工作流，自动编译 Debug/未签名 Release、运行所有
+Debug 单元测试及 `:app:lintDebug`，并保留 APK 和检查报告 14 天。支持 main 推送、PR
+和手动触发。AGP 更新到 SDK 37 要求的最低补丁版本 9.1.1，移除不支持 SDK 的警告抑制。
+CI 是否通过应以对应提交的 Actions 运行结果为准；配置工作流本身不代表已通过编译。
+
 | 流程 | 预期 |
 |---|---|
 | 普通应用入口 | 初次引导；完成后重启进入抽屉；根返回可退出 |

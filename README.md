@@ -33,6 +33,23 @@ bash scripts/check-no-horologist.sh
 PowerShell: `.\gradlew.bat :app:assembleDebug` and `.\scripts\check-no-horologist.ps1`.
 Release is unsigned unless you supply a signing configuration.
 
+## CI builds
+
+[Android build](https://github.com/heDuke/atrium/actions/workflows/android-build.yml)
+runs on pushes to `main`, pull requests and manual **Run workflow** requests.
+It installs JDK 17 and SDK 37, builds Debug and unsigned Release APKs, runs all
+Debug unit tests and Android Lint, and caches Gradle dependencies.
+The separate Horologist ban workflow remains required alongside the build.
+
+Open a workflow run and download its **Artifacts** (retained for 14 days):
+
+- `atrium-debug-<commit>`: debug-signed APK for device testing.
+- `atrium-release-unsigned-<commit>`: release APK requiring signing before installation.
+- `atrium-reports-<commit>`: available unit-test and Lint reports, including failed checks.
+
+No signing secrets are required for CI. A green build does not replace Pixel Watch 3
+device acceptance; see the validation checklist below.
+
 ## Documentation
 
 - [SPEC](docs/SPEC.md)
