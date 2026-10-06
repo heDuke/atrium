@@ -3,11 +3,14 @@ package com.alliehe.feature.drawer
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -122,15 +125,19 @@ fun DrawerRoute(
                 DrawerLayoutMode.Grid -> items(uiState.apps.chunked(2), key = { row ->
                     row.joinToString("|") { it.entry.componentKey }
                 }) { row ->
+                    val showStatus = row.any { it.pinned || it.favorite }
                     TransformingContent(SurfaceTransformation(spec), Modifier.fillMaxWidth().transformedHeight(this, spec)) {
-                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.fillMaxWidth()) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min),
+                        ) {
                             row.forEach { app ->
                                 val status = appStatus(app)
                                 val actionsLabel = stringResource(R.string.drawer_app_actions_for, app.entry.label)
                                 Button(
                                     onClick = { launch(app) },
                                     onLongClick = { onOpenActions(app.entry.componentKey) },
-                                    modifier = Modifier.weight(1f).heightIn(min = 72.dp).semantics {
+                                    modifier = Modifier.weight(1f).heightIn(min = 72.dp).fillMaxHeight().semantics {
                                         stateDescription = status
                                         customActions = listOf(CustomAccessibilityAction(actionsLabel) {
                                             onOpenActions(app.entry.componentKey); true
@@ -139,12 +146,14 @@ fun DrawerRoute(
                                 ) {
                                     Column(verticalArrangement = Arrangement.spacedBy(4.dp),
                                         horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
-                                        modifier = Modifier.padding(vertical = 4.dp)) {
+                                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
                                         AppIcon(uiState.icons[app.entry.componentKey], app.entry.label)
-                                        Text(app.entry.label, maxLines = 2, overflow = TextOverflow.Ellipsis,
+                                        Text(app.entry.label, minLines = 2, maxLines = 2, overflow = TextOverflow.Ellipsis,
                                             textAlign = TextAlign.Center)
-                                        if (status.isNotEmpty()) Text(status, style = MaterialTheme.typography.labelSmall,
-                                            maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                        // Reserve the same status space in both cells of this row.
+                                        if (showStatus) Text(status, style = MaterialTheme.typography.labelSmall,
+                                            minLines = 1, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                                            textAlign = TextAlign.Center)
                                     }
                                 }
                             }
