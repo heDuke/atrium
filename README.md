@@ -39,7 +39,7 @@ Release is unsigned unless you supply a signing configuration.
 runs on pushes to `main`, pull requests and manual **Run workflow** requests.
 It installs JDK 17 and SDK 37, builds Debug and unsigned Release APKs, runs all
 Debug unit tests and Android Lint, and caches Gradle dependencies.
-The separate Horologist ban workflow remains required alongside the build.
+The separate Horologist ban workflow also runs on pushes and pull requests.
 
 Open a workflow run and download its **Artifacts** (retained for 14 days):
 
@@ -58,5 +58,6 @@ device acceptance; see the validation checklist below.
 - [Extensions](docs/EXTENSIONS.md)
 - [WFF stub](docs/WFF.md)
 
-These source changes have not yet been compiled in the review environment. See validation status for
-which checks ran and which require a working Android build/device environment.
+GitHub Actions has built and uploaded Debug and unsigned Release APKs, and passed all 16 unit
+tests and Android Lint (warnings remain). See validation status for the checks that still
+require a Pixel Watch 3.

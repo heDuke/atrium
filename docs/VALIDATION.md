@@ -13,9 +13,9 @@
   PackageManager 查询在 IO scope；隐藏应用恢复入口；Home/普通入口区分根返回；
   系统输入取消保留关键词；操作页位于独立导航目的地。
 
-以上是静态检查，不代表 Kotlin 类型检查、APK 构建或 UI 运行成功。
+以上是本地静态检查；云端编译验证见下节，UI 运行仍未验收。
 
-## 构建阻断
+## 本地构建限制与云端验证
 
 尝试命令：
 
@@ -24,12 +24,22 @@ bash gradlew :app:assembleDebug :app:assembleRelease :core:data:testDebugUnitTes
 ```
 
 Gradle wrapper 下载 `gradle-9.7.0-bin.zip` 时返回 `java.net.SocketException: Network is unreachable`。
-本环境也没有 Android SDK 或模拟器，因此 Kotlin 编译、Gradle 单元测试、Lint、APK 安装
-以及 UI 截图/录屏均未完成。依赖版本沿用仓库，新增 `androidx.wear:wear-input:1.2.0`。
+本环境也没有 Android SDK 或模拟器，因此本地 Kotlin 编译、Gradle 单元测试、Lint、APK 安装
+以及 UI 截图/录屏均未完成。后续已接入 GitHub Actions；云端验证不受这个本地限制。
 
-新增 4 个 AppCatalogRules JUnit 用例（未运行），覆盖：隐藏不泄漏及恢复、置顶/收藏排序、
+新增 4 个 AppCatalogRules JUnit 用例，覆盖：隐藏不泄漏及恢复、置顶/收藏排序、
 去空白且忽略大小写的搜索、同包多 Activity 的组件身份和包级隐藏。
-保留既有 12 个性能/减弱动态状态转换用例（本环境未运行）。
+保留既有 12 个性能/减弱动态状态转换用例。
+
+2026-10-06 云端运行 [37485860336](https://github.com/heDuke/atrium/actions/runs/37485860336)：
+`testDebugUnitTest` 已完成 Debug 源码编译，16 个用例全部通过，无失败、错误或跳过；
+`:app:lintDebug` 通过，无错误、38 条警告（依赖更新提示、资源、备份配置、Wear Recents 等）。
+该轮整体失败是显式 SDK 安装命令找不到 `platforms;android-37`，APK 步骤因此被跳过。
+工作流已修正为由 AGP 根据 compileSdk 解析平台包，环境初始化成功后才运行后续检查。
+
+修正后运行 [37486525986](https://github.com/heDuke/atrium/actions/runs/37486525986)
+已成功执行 `:app:assembleDebug :app:assembleRelease`，并上传 Debug APK 和未签名 Release APK。
+Debug APK 可用于设备测试；Release APK 仍须签名后安装。
 
 ## Pixel Watch 3 待验收（未执行）
 
