@@ -15,6 +15,7 @@ android {
         targetSdk = 36
         versionCode = 1
         versionName = "0.1.0-scaffold"
+        buildConfigField("boolean", "BENCHMARK_HOOKS", "false")
     }
 
     buildTypes {
@@ -24,6 +25,14 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
+        }
+        // Release-like, profileable build for :benchmark (Macrobenchmark). Debug-signed, never shipped.
+        create("benchmark") {
+            initWith(getByName("release"))
+            signingConfig = signingConfigs.getByName("debug")
+            matchingFallbacks += listOf("release")
+            isDebuggable = false
+            buildConfigField("boolean", "BENCHMARK_HOOKS", "true")
         }
     }
 

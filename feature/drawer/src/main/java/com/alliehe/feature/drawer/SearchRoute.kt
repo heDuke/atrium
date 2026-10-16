@@ -10,6 +10,16 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.semantics
+import com.alliehe.core.theme.LocalAtriumMotion
+import com.alliehe.feature.drawer.layout.BoundsHolder
+import com.alliehe.feature.drawer.layout.rememberLongPress
+import com.alliehe.feature.drawer.layout.trackBounds
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -36,7 +46,12 @@ import com.alliehe.core.theme.TransformingContent
 private const val SEARCH_INPUT_KEY = "search_query"
 
 @Composable
-fun SearchRoute(viewModel: SearchViewModel = hiltViewModel()) {
+fun SearchRoute(
+    onOpenActions: (String) -> Unit = {},
+    viewModel: SearchViewModel = hiltViewModel(),
+) {
+    val view = LocalView.current
+    val motion = LocalAtriumMotion.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val listState = rememberTransformingLazyColumnState()
@@ -48,6 +63,7 @@ fun SearchRoute(viewModel: SearchViewModel = hiltViewModel()) {
                 ?.let { viewModel.onQueryChange(it.toString()) }
         }
     }
+    CompositionLocalProvider(LocalAppIconLoader provides viewModel.iconLoader) {
     ScreenScaffold(scrollState = listState) { padding ->
         TransformingLazyColumn(state = listState, contentPadding = padding, modifier = Modifier.fillMaxSize()) {
             item {
@@ -103,19 +119,31 @@ fun SearchRoute(viewModel: SearchViewModel = hiltViewModel()) {
                     }
                 }
             } else items(uiState.results, key = { it.componentKey }) { entry ->
+                val bounds = remember { BoundsHolder() }
+                val press = rememberLongPress { onOpenActions(entry.componentKey) }
+                val actionsLabel = stringResource(R.string.drawer_app_actions_for, entry.label)
                 Button(
                     onClick = {
-                        if (AppLauncher.launch(context, entry) != LaunchResult.Started) {
+                        val source = if (motion.reduceMotion) null else view
+                        if (AppLauncher.launch(context, entry, source, bounds.rect) != LaunchResult.Started) {
                             Toast.makeText(context, R.string.launch_failed, Toast.LENGTH_SHORT).show()
                             viewModel.refresh()
                         }
                     },
-                    modifier = Modifier.fillMaxWidth().transformedHeight(this, spec),
+                    onLongClick = press.trigger,
+                    onLongClickLabel = actionsLabel,
+                    modifier = Modifier.fillMaxWidth().transformedHeight(this, spec).then(press.modifier)
+                        .semantics {
+                            customActions = listOf(CustomAccessibilityAction(actionsLabel) {
+                                onOpenActions(entry.componentKey); true
+                            })
+                        },
                     transformation = SurfaceTransformation(spec),
-                    icon = { AppIcon(uiState.icons[entry.componentKey], entry.label) },
+                    icon = { AppIcon(entry, modifier = Modifier.trackBounds(bounds)) },
                     label = { Text(entry.label, maxLines = 2, overflow = TextOverflow.Ellipsis) },
                 )
             }
         }
     }
+}
 }

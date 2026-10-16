@@ -46,7 +46,7 @@ fun AtriumRoot(
     AppScaffold {
         SwipeDismissableNavHost(navController = navController, startDestination = startDestination) {
             composable(Routes.ONBOARDING) {
-                OnboardingRoute(onFinished = {
+                OnboardingRoute(blockExit = homeSession, onFinished = {
                     navController.navigate(Routes.DRAWER) {
                         popUpTo(Routes.ONBOARDING) { inclusive = true }
                         launchSingleTop = true
@@ -72,7 +72,15 @@ fun AtriumRoot(
                     viewModel = drawerViewModel,
                 )
             }
-            composable(Routes.SEARCH) { SearchRoute() }
+            composable(Routes.SEARCH) {
+                SearchRoute(onOpenActions = { componentKey ->
+                    // ActionsScreen reads its target from the drawer entry (shared DrawerViewModel).
+                    runCatching { navController.getBackStackEntry(Routes.DRAWER) }.getOrNull()?.let { drawer ->
+                        drawer.savedStateHandle["actions_target"] = componentKey
+                        navController.navigate(Routes.ACTIONS) { launchSingleTop = true }
+                    }
+                })
+            }
             composable(Routes.SETTINGS) {
                 SettingsRoute(onOpenHidden = { navController.navigate(Routes.HIDDEN) { launchSingleTop = true } })
             }

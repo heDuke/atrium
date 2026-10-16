@@ -19,6 +19,13 @@ enum class PerformanceMode {
 enum class DrawerLayoutMode {
     List,
     Grid,
+    Honeycomb,
+}
+
+/** Row/cell density for List and Grid layouts (Honeycomb ignores it). */
+enum class LayoutDensity {
+    Standard,
+    Compact,
 }
 
 /**
@@ -29,6 +36,7 @@ data class UserPrefs(
     val favoritePackages: Set<String> = emptySet(),
     val hiddenPackages: Set<String> = emptySet(),
     val drawerLayout: DrawerLayoutMode = DrawerLayoutMode.List,
+    val layoutDensity: LayoutDensity = LayoutDensity.Standard,
     val performanceMode: PerformanceMode = PerformanceMode.Balanced,
     val lastNonSaverMode: PerformanceMode = PerformanceMode.Balanced,
     val reduceMotion: Boolean = false,

@@ -3,6 +3,7 @@ package com.alliehe.core.data
 import com.alliehe.core.model.AppEntry
 import com.alliehe.core.model.UserPrefs
 import com.alliehe.core.model.componentKey
+import com.alliehe.core.model.sectioned
 import com.alliehe.core.model.visibleApps
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -31,5 +32,19 @@ class AppCatalogRulesTest {
         val second = a.copy(activityName = "Other")
         assertEquals(2, listOf(a, second).map { it.componentKey }.distinct().size)
         assertEquals(emptyList<AppEntry>(), listOf(a, second).visibleApps(UserPrefs(hiddenPackages = setOf("a"))))
+    }
+    @Test fun sectionsArePinnedThenFavoritesThenAllWithoutDuplicates() {
+        val s = listOf(c, b, a).sectioned(
+            UserPrefs(pinnedPackages = setOf("c", "b"), favoritePackages = setOf("b", "a"), hiddenPackages = emptySet()),
+        )
+        assertEquals(listOf(b, c), s.pinned)
+        assertEquals(listOf(a), s.favorites)
+        assertEquals(emptyList<AppEntry>(), s.all)
+        assertEquals(listOf(b, c, a), s.flattened)
+    }
+    @Test fun sectionsDropHidden() {
+        val s = listOf(a, b).sectioned(UserPrefs(favoritePackages = setOf("a"), hiddenPackages = setOf("a")))
+        assertEquals(emptyList<AppEntry>(), s.favorites)
+        assertEquals(listOf(b), s.all)
     }
 }

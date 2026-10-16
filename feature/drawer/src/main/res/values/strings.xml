@@ -30,4 +30,8 @@
     <string name="search_edit_hint">点按使用系统输入</string>
     <string name="search_clear">清除关键词</string>
     <string name="search_input_unavailable">系统输入不可用，请检查手表输入设置</string>
+    <string name="drawer_section_pinned">置顶</string>
+    <string name="drawer_section_favorites">收藏</string>
+    <string name="drawer_section_all">全部应用</string>
+    <string name="drawer_honeycomb_a11y">蜂窝应用布局，可用操作打开应用或设置</string>
 </resources>

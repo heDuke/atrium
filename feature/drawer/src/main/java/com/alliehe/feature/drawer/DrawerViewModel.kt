@@ -1,13 +1,14 @@
 package com.alliehe.feature.drawer
 
-import android.graphics.Bitmap
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.alliehe.core.data.AppIconLoader
 import com.alliehe.core.data.InstalledAppsRepository
 import com.alliehe.core.data.UserPrefsRepository
 import com.alliehe.core.model.AppEntry
 import com.alliehe.core.model.DrawerLayoutMode
-import com.alliehe.core.model.visibleApps
+import com.alliehe.core.model.LayoutDensity
+import com.alliehe.core.model.sectioned
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.io.IOException
 import javax.inject.Inject
@@ -20,30 +21,45 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 data class DrawerAppItem(val entry: AppEntry, val pinned: Boolean, val favorite: Boolean)
+
+enum class SectionKind { Pinned, Favorites, All }
+
+data class DrawerSection(val kind: SectionKind, val apps: List<DrawerAppItem>)
+
+/** Pure data for every [com.alliehe.feature.drawer.layout.AppListLayout]; rendering lives in the layouts. */
 data class DrawerUiState(
-    val apps: List<DrawerAppItem> = emptyList(),
-    val icons: Map<String, Bitmap> = emptyMap(),
+    val sections: List<DrawerSection> = emptyList(),
     val layout: DrawerLayoutMode = DrawerLayoutMode.List,
+    val density: LayoutDensity = LayoutDensity.Standard,
     val loading: Boolean = true,
     val refreshFailed: Boolean = false,
-)
+) {
+    val apps: List<DrawerAppItem> get() = sections.flatMap { it.apps }
+}
 
 @HiltViewModel
 class DrawerViewModel @Inject constructor(
     private val installedAppsRepository: InstalledAppsRepository,
     private val userPrefsRepository: UserPrefsRepository,
+    val iconLoader: AppIconLoader,
 ) : ViewModel() {
     private val errors = Channel<Unit>(Channel.BUFFERED)
     val writeErrors = errors.receiveAsFlow()
     val uiState: StateFlow<DrawerUiState> = combine(
         installedAppsRepository.catalog, userPrefsRepository.prefs,
     ) { catalog, prefs ->
+        val s = catalog.apps.sectioned(prefs)
+        fun List<AppEntry>.items() = map {
+            DrawerAppItem(it, it.packageName in prefs.pinnedPackages, it.packageName in prefs.favoritePackages)
+        }
         DrawerUiState(
-            apps = catalog.apps.visibleApps(prefs).map {
-                DrawerAppItem(it, it.packageName in prefs.pinnedPackages, it.packageName in prefs.favoritePackages)
-            },
-            icons = catalog.icons,
+            sections = listOf(
+                DrawerSection(SectionKind.Pinned, s.pinned.items()),
+                DrawerSection(SectionKind.Favorites, s.favorites.items()),
+                DrawerSection(SectionKind.All, s.all.items()),
+            ).filter { it.apps.isNotEmpty() },
             layout = prefs.drawerLayout,
+            density = prefs.layoutDensity,
             loading = catalog.loading,
             refreshFailed = catalog.failed,
         )

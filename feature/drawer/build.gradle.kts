@@ -53,3 +53,7 @@ dependencies {
     ksp(libs.hilt.compiler)
     implementation(libs.hilt.navigation.compose)
 }
+
+dependencies {
+    testImplementation(libs.junit)
+}
