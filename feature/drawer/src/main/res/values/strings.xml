@@ -33,5 +33,5 @@
     <string name="drawer_section_pinned">置顶</string>
     <string name="drawer_section_favorites">收藏</string>
     <string name="drawer_section_all">全部应用</string>
-    <string name="drawer_honeycomb_settings_hint">继续转动表冠打开设置</string>
+    <string name="drawer_honeycomb_a11y">蜂窝应用布局，可用操作打开应用或设置</string>
 </resources>

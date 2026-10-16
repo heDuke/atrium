@@ -26,8 +26,8 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.testTag
+import androidx.wear.compose.foundation.requestFocusOnHierarchyActive
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
@@ -62,19 +62,16 @@ import com.alliehe.core.model.componentKey
 import com.alliehe.core.theme.LocalAtriumMotion
 import com.alliehe.feature.drawer.DrawerUiState
 import com.alliehe.feature.drawer.R
-import kotlin.math.abs
 import kotlinx.coroutines.launch
 
-private const val MIN_ZOOM = 0.6f
-private const val MAX_ZOOM = 1.6f
-private const val ROTARY_ZOOM_PX = 900f
-private const val SETTINGS_REVEAL_PX = 240f
 
 /**
  * (3) Honeycomb — approved custom-drawn exception.
  * Fisheye scale/alpha by distance from centre, drag with fling + snap to the nearest icon,
  * rotary crown zooms; continuing to turn past minimum zoom reveals the Settings EdgeButton.
  */
+const val HONEYCOMB_SETTINGS_TAG = "honeycomb-settings"
+
 object HoneycombAppLayout : AppListLayout {
     @Composable
     override fun Content(state: DrawerUiState, actions: DrawerActions, modifier: Modifier) {
@@ -91,18 +88,17 @@ object HoneycombAppLayout : AppListLayout {
         val images = remember(state.icons, apps) {
             apps.map { state.icons[it.entry.componentKey]?.asImageBitmap() }
         }
-        var zoom by remember { mutableFloatStateOf(1f) }
+        val crown = remember { CrownZoom() }
+        var zoom by remember { mutableFloatStateOf(crown.zoom) }
         val pan = remember { Animatable(Offset.Zero, Offset.VectorConverter) }
         var origin by remember { mutableStateOf(Offset.Zero) }
         var canvasSize by remember { mutableStateOf(Size.Zero) }
         var pressed by remember { mutableIntStateOf(-1) }
-        var overscroll by remember { mutableFloatStateOf(0f) }
         var showSettings by remember { mutableStateOf(false) }
-        val focus = remember { FocusRequester() }
         val latestApps by rememberUpdatedState(apps)
         val settingsLabel = stringResource(R.string.drawer_open_settings)
         val searchLabel = stringResource(R.string.drawer_open_search)
-        LaunchedEffect(Unit) { focus.requestFocus() }
+        val honeycombLabel = stringResource(R.string.drawer_honeycomb_a11y)
 
         fun spacing() = spacingPx * zoom
         fun cellCenter(i: Int): Offset {
@@ -139,7 +135,7 @@ object HoneycombAppLayout : AppListLayout {
                     .fillMaxSize()
                     .onGloballyPositioned { origin = it.positionInRoot(); canvasSize = Size(it.size.width.toFloat(), it.size.height.toFloat()) }
                     .semantics {
-                        contentDescription = searchLabel
+                        contentDescription = honeycombLabel
                         customActions = buildList {
                             add(CustomAccessibilityAction(settingsLabel) { actions.onOpenSettings(); true })
                             latestApps.forEach { app ->
@@ -148,21 +144,16 @@ object HoneycombAppLayout : AppListLayout {
                         }
                     }
                     .onRotaryScrollEvent { e ->
-                        val next = (zoom - e.verticalScrollPixels / ROTARY_ZOOM_PX).coerceIn(MIN_ZOOM, MAX_ZOOM)
-                        if (next <= MIN_ZOOM && e.verticalScrollPixels > 0f) {
-                            overscroll += e.verticalScrollPixels
-                            if (overscroll > SETTINGS_REVEAL_PX && !showSettings) {
-                                showSettings = true
-                                haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
-                            }
-                        } else {
-                            overscroll = 0f
-                            if (e.verticalScrollPixels < 0f) showSettings = false
+                        if (crown.onRotary(e.verticalScrollPixels)) {
+                            haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
                         }
-                        zoom = next
+                        zoom = crown.zoom
+                        showSettings = crown.settingsRevealed
                         true
                     }
-                    .focusRequester(focus)
+                    // Re-acquires focus whenever this NavHost destination becomes active
+                    // (a one-shot requestFocus is lost once SwipeDismissableNavHost moves focus).
+                    .requestFocusOnHierarchyActive()
                     .focusable()
                     .pointerInput(units) {
                         detectTapGestures(
@@ -253,21 +244,20 @@ object HoneycombAppLayout : AppListLayout {
                 modifier = Modifier.align(Alignment.TopCenter).padding(top = 8.dp),
                 label = { Text(searchLabel) },
             )
+            // Always-visible, tappable Settings entry (the crown reveal below is only a shortcut).
+            CompactButton(
+                onClick = actions.onOpenSettings,
+                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 8.dp)
+                    .testTag(HONEYCOMB_SETTINGS_TAG),
+                label = { Text(settingsLabel) },
+            )
             AnimatedVisibility(
-                visible = showSettings || apps.isEmpty(),
+                visible = showSettings,
                 modifier = Modifier.align(Alignment.BottomCenter),
                 enter = fadeIn(MaterialTheme.motionScheme.defaultEffectsSpec()),
                 exit = fadeOut(MaterialTheme.motionScheme.fastEffectsSpec()),
             ) {
                 EdgeButton(onClick = actions.onOpenSettings, buttonSize = EdgeButtonSize.Small) { Text(settingsLabel) }
-            }
-            if (!showSettings && abs(zoom - MIN_ZOOM) < 0.01f) {
-                Text(
-                    stringResource(R.string.drawer_honeycomb_settings_hint),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = colors.onSurfaceVariant,
-                    modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 12.dp),
-                )
             }
         }
     }
