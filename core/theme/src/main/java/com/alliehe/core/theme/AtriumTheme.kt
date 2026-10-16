@@ -1,6 +1,7 @@
 package com.alliehe.core.theme
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.wear.compose.material3.ColorScheme
@@ -22,6 +23,7 @@ import com.alliehe.core.model.PerformanceMode
 @Composable
 fun AtriumTheme(
     performanceMode: PerformanceMode = PerformanceMode.Balanced,
+    reduceMotion: Boolean = false,
     seedColor: Color? = null,
     content: @Composable () -> Unit,
 ) {
@@ -39,9 +41,17 @@ fun AtriumTheme(
         -> MotionScheme.expressive()
     }
 
-    MaterialTheme(
-        colorScheme = colorScheme,
-        motionScheme = motionScheme,
-        content = content,
+    val systemOff = rememberSystemAnimationsDisabled(context)
+    val motion = AtriumMotion(
+        reduceMotion = reduceMotion || systemOff,
+        lite = performanceMode == PerformanceMode.PowerSaver,
     )
+
+    CompositionLocalProvider(LocalAtriumMotion provides motion) {
+        MaterialTheme(
+            colorScheme = colorScheme,
+            motionScheme = motionScheme,
+            content = content,
+        )
+    }
 }

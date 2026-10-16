@@ -37,6 +37,7 @@ import androidx.wear.compose.material3.Text
 import androidx.wear.compose.material3.lazy.rememberTransformationSpec
 import androidx.wear.compose.material3.lazy.transformedHeight
 import com.alliehe.core.model.DrawerLayoutMode
+import com.alliehe.core.model.LayoutDensity
 import com.alliehe.core.model.PerformanceMode
 import com.alliehe.core.theme.TransformingContent
 
@@ -78,12 +79,26 @@ fun SettingsRoute(onOpenHidden: () -> Unit, viewModel: SettingsViewModel = hiltV
                     transformation = SurfaceTransformation(spec)) { Text(stringResource(R.string.settings_title)) }
             }
             item {
-                SwitchButton(checked = prefs.drawerLayout == DrawerLayoutMode.Grid,
-                    onCheckedChange = { viewModel.setDrawerLayout(if (it) DrawerLayoutMode.Grid else DrawerLayoutMode.List) },
-                    modifier = Modifier.fillMaxWidth().transformedHeight(this, spec),
-                    transformation = SurfaceTransformation(spec),
-                    label = { Text(stringResource(R.string.settings_drawer_grid)) },
-                    secondaryLabel = { Text(stringResource(R.string.settings_drawer_grid_secondary)) })
+                ListHeader(modifier = Modifier.fillMaxWidth().transformedHeight(this, spec),
+                    transformation = SurfaceTransformation(spec)) { Text(stringResource(R.string.settings_section_layout)) }
+            }
+            DrawerLayoutMode.entries.forEach { mode ->
+                item(key = "layout-${mode.name}") {
+                    LayoutOption(mode, prefs.drawerLayout == mode, { viewModel.setDrawerLayout(mode) }, spec)
+                }
+            }
+            if (prefs.drawerLayout != DrawerLayoutMode.Honeycomb) {
+                listOf(LayoutDensity.Standard to R.string.settings_density_standard,
+                    LayoutDensity.Compact to R.string.settings_density_compact).forEach { (density, label) ->
+                    item(key = "density-${density.name}") {
+                        RadioButton(selected = prefs.layoutDensity == density,
+                            onSelect = { viewModel.setLayoutDensity(density) },
+                            modifier = Modifier.fillMaxWidth().transformedHeight(this, spec),
+                            transformation = SurfaceTransformation(spec),
+                            label = { Text(stringResource(label)) },
+                            secondaryLabel = { Text(stringResource(R.string.settings_density)) })
+                    }
+                }
             }
             item {
                 Button(onClick = onOpenHidden,

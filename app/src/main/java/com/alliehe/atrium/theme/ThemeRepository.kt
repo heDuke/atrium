@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.map
  */
 data class ThemePrefs(
     val performanceMode: PerformanceMode = PerformanceMode.Balanced,
+    val reduceMotion: Boolean = false,
     val seedColorArgb: Long? = null,
 )
 
@@ -23,6 +24,7 @@ class ThemeRepository @Inject constructor(
     val themePrefs: Flow<ThemePrefs> = userPrefsRepository.prefs.map { prefs ->
         ThemePrefs(
             performanceMode = prefs.effectivePerformanceMode,
+            reduceMotion = prefs.reduceMotion,
             seedColorArgb = prefs.seedColorArgb,
         )
     }

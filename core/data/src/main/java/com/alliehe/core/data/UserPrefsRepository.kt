@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import com.alliehe.core.model.DrawerLayoutMode
+import com.alliehe.core.model.LayoutDensity
 import com.alliehe.core.model.PerformanceMode
 import com.alliehe.core.model.UserPrefs
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -39,6 +40,18 @@ class UserPrefsRepository @Inject constructor(
 
     suspend fun setDrawerLayout(mode: DrawerLayoutMode) {
         context.userPrefsDataStore.edit { it[UserPrefsKeys.DRAWER_LAYOUT] = mode.name }
+    }
+
+    suspend fun setLayoutDensity(density: LayoutDensity) {
+        context.userPrefsDataStore.edit { it[UserPrefsKeys.LAYOUT_DENSITY] = density.name }
+    }
+
+    /** OOBE finish: persist the chosen layout and the done flag in one transaction. */
+    suspend fun completeOnboarding(layout: DrawerLayoutMode) {
+        context.userPrefsDataStore.edit {
+            it[UserPrefsKeys.DRAWER_LAYOUT] = layout.name
+            it[UserPrefsKeys.ONBOARDING_DONE] = true
+        }
     }
 
     suspend fun setOnboardingCompleted(completed: Boolean) {

@@ -9,6 +9,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.alliehe.core.model.DrawerLayoutMode
+import com.alliehe.core.model.LayoutDensity
 import com.alliehe.core.model.PerformanceMode
 import com.alliehe.core.model.UserPrefs
 import kotlinx.coroutines.flow.first
@@ -24,6 +25,7 @@ internal object UserPrefsKeys {
     val FAVORITES = stringSetPreferencesKey("favorites")
     val HIDDEN = stringSetPreferencesKey("hidden")
     val DRAWER_LAYOUT = stringPreferencesKey("drawer_layout")
+    val LAYOUT_DENSITY = stringPreferencesKey("layout_density")
     val PERFORMANCE_MODE = stringPreferencesKey("performance_mode")
     val LAST_NON_SAVER = stringPreferencesKey("last_non_saver")
     val REDUCE_MOTION = booleanPreferencesKey("reduce_motion")
@@ -41,6 +43,7 @@ internal fun Preferences.toUserPrefs(): UserPrefs {
         favoritePackages = this[UserPrefsKeys.FAVORITES].orEmpty(),
         hiddenPackages = this[UserPrefsKeys.HIDDEN].orEmpty(),
         drawerLayout = enumValueOr(this[UserPrefsKeys.DRAWER_LAYOUT], DrawerLayoutMode.List),
+        layoutDensity = enumValueOr(this[UserPrefsKeys.LAYOUT_DENSITY], LayoutDensity.Standard),
         performanceMode = performance,
         lastNonSaverMode = lastNonSaver,
         reduceMotion = this[UserPrefsKeys.REDUCE_MOTION] ?: false,

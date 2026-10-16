@@ -36,6 +36,7 @@ class MainActivity : ComponentActivity() {
             val seedArgb = ThemeSeedProvider.resolveSeedArgb(themePrefs.seedColorArgb)
             AtriumTheme(
                 performanceMode = themePrefs.performanceMode,
+                reduceMotion = themePrefs.reduceMotion,
                 seedColor = seedArgb?.let { Color(it.toInt()) },
             ) {
                 AtriumRoot(homeRequest = homeRequest, homeSession = homeSession)
