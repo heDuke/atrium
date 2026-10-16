@@ -63,7 +63,10 @@ private const val STEP_DEFAULT = 2
 
 /** OOBE: welcome → layout picker → (set as default, only when the HOME role is requestable). */
 @Composable
-fun OnboardingRoute(onFinished: () -> Unit, viewModel: SettingsViewModel = hiltViewModel()) {
+fun OnboardingRoute(
+    onFinished: () -> Unit,
+    blockExit: Boolean = false,
+    viewModel: SettingsViewModel = hiltViewModel()) {
     val saving by viewModel.savingOnboarding.collectAsStateWithLifecycle()
     val icons by viewModel.onboardingIcons.collectAsStateWithLifecycle()
     ObserveSettingsErrors(viewModel)
@@ -73,7 +76,8 @@ fun OnboardingRoute(onFinished: () -> Unit, viewModel: SettingsViewModel = hiltV
     var layout by rememberSaveable { mutableStateOf(DrawerLayoutMode.List) }
     val roleAvailable = remember { DefaultLauncherProbe.state(context) == HomeRoleState.Available }
     val finish = { viewModel.completeOnboarding(layout, onFinished) }
-    BackHandler(enabled = step > STEP_WELCOME) { step-- }
+    // As HOME, back on the first step must not exit to an empty task; otherwise step back.
+    BackHandler(enabled = step > STEP_WELCOME || blockExit) { if (step > STEP_WELCOME) step-- }
     val enterSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
     val exitSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
     AnimatedContent(

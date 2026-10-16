@@ -63,7 +63,9 @@ object GridAppLayout : AppListLayout {
                             transformation = SurfaceTransformation(spec),
                         ) { Text(sectionTitle(section.kind)) }
                     }
-                    items(rows, key = { row -> row.joinToString("|") { it.entry.componentKey } }) { row ->
+                    // Positional keys: batches only append, so existing rows keep their identity.
+                    items(rows.size, key = { index -> "${section.kind}-$index" }) { index ->
+                        val row = rows[index]
                         val inset = if (row === firstRow || row === lastRow) 20.dp else 0.dp
                         TransformingContent(
                             SurfaceTransformation(spec),

@@ -14,7 +14,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.wear.compose.material3.MaterialTheme
@@ -30,18 +29,18 @@ val LocalAppIconLoader = staticCompositionLocalOf<AppIconLoader?> { null }
  * in a lazy list). Cache hits render immediately; otherwise a letter placeholder shows meanwhile.
  */
 @Composable
-internal fun rememberAppIcon(entry: AppEntry, size: Dp): ImageBitmap? {
+internal fun rememberAppIcon(entry: AppEntry): ImageBitmap? {
     val loader = LocalAppIconLoader.current
-    val px = with(LocalDensity.current) { size.roundToPx() }
-    val bitmap by produceState(loader?.peek(entry, px)?.asImageBitmap(), loader, entry, px) {
-        if (value == null && loader != null) value = loader.load(entry, px)?.asImageBitmap()
+    // One canonical decode size for every layout/density; drawing scales it to [size].
+    val bitmap by produceState(loader?.peek(entry)?.asImageBitmap(), loader, entry) {
+        if (value == null && loader != null) value = loader.load(entry)?.asImageBitmap()
     }
     return bitmap
 }
 
 @Composable
 internal fun AppIcon(entry: AppEntry, modifier: Modifier = Modifier, size: Dp = 32.dp) {
-    val image = rememberAppIcon(entry, size)
+    val image = rememberAppIcon(entry)
     if (image != null) {
         Image(bitmap = image, contentDescription = null, modifier = modifier.size(size))
     } else {

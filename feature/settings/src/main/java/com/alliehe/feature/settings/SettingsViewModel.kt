@@ -29,8 +29,6 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-private const val ONBOARDING_ICON_PX = 64
-
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
@@ -50,7 +48,7 @@ class SettingsViewModel @Inject constructor(
     val onboardingIcons: StateFlow<List<Bitmap>> = installedAppsRepository.catalog
         .map { catalog -> catalog.apps.take(5).map { it.componentKey }.joinToString() to catalog.apps.take(5) }
         .distinctUntilChangedBy { it.first }
-        .mapLatest { (_, apps) -> apps.mapNotNull { iconLoader.load(it, ONBOARDING_ICON_PX) } }
+        .mapLatest { (_, apps) -> apps.mapNotNull { iconLoader.load(it) } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
     private val errors = Channel<Unit>(Channel.BUFFERED)
     val writeErrors = errors.receiveAsFlow()

@@ -65,6 +65,9 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+      - name: Compile Macrobenchmark module (runs on device only)
+        run: bash gradlew :benchmark:assembleBenchmark --no-daemon --stacktrace
+
       - name: Run unit tests
         if: ${{ !cancelled() && steps.gradle.outcome == 'success' }}
         run: bash gradlew testDebugUnitTest --no-daemon --stacktrace

@@ -26,4 +26,5 @@ include(
     ":feature:settings",
     ":feature:tile",
     ":feature:watchface",
+    ":benchmark",
 )

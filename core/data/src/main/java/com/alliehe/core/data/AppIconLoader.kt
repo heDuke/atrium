@@ -13,6 +13,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -31,6 +32,12 @@ class AppIconLoader @Inject constructor(
     private val lock = Mutex()
     private val inFlight = HashMap<String, CompletableDeferred<Bitmap?>>()
 
+    /** Single canonical decode size so every layout/density shares one cache entry per app. */
+    val canonicalSizePx: Int = (CANONICAL_ICON_DP * context.resources.displayMetrics.density).toInt().coerceAtLeast(1)
+
+    fun peek(entry: AppEntry): Bitmap? = peek(entry, canonicalSizePx)
+    suspend fun load(entry: AppEntry): Bitmap? = load(entry, canonicalSizePx)
+
     /** Synchronous cache hit only; safe on the main thread. */
     fun peek(entry: AppEntry, sizePx: Int): Bitmap? = cache.get(key(entry, sizePx))
 
@@ -43,13 +50,15 @@ class AppIconLoader @Inject constructor(
             inFlight[key] ?: CompletableDeferred<Bitmap?>().also { inFlight[key] = it; owner = true }
         }
         if (!owner) return deferred.await()
-        val bitmap = try {
-            withContext(Dispatchers.IO) { decode(entry, sizePx) }
+        var bitmap: Bitmap? = null
+        try {
+            bitmap = withContext(Dispatchers.IO) { decode(entry, sizePx) }
+            if (bitmap != null) cache.put(key, bitmap)
         } finally {
-            lock.withLock { inFlight.remove(key) }
+            // Always release joiners, even if the owning coroutine was cancelled mid-decode.
+            withContext(NonCancellable) { lock.withLock { inFlight.remove(key) } }
+            deferred.complete(bitmap)
         }
-        if (bitmap != null) cache.put(key, bitmap)
-        deferred.complete(bitmap)
         return bitmap
     }
 
@@ -71,6 +80,8 @@ class AppIconLoader @Inject constructor(
     private fun key(entry: AppEntry, sizePx: Int) = "${entry.componentKey}@$sizePx"
 
     private companion object {
+        const val CANONICAL_ICON_DP = 40
+
         /** 1/32 of the heap, capped at 4 MB (≈ 160 icons at 40dp/xhdpi). */
         fun cacheBytes(): Int = (Runtime.getRuntime().maxMemory() / 32).coerceAtMost(4L * 1024 * 1024).toInt()
     }

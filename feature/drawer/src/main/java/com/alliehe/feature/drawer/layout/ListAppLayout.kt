@@ -11,7 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
-import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
@@ -80,7 +80,7 @@ private fun TransformingLazyColumnItemScope.AppRow(
         onLongClickLabel = actionsLabel,
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(min = if (compact) 40.dp else 52.dp)
+            .heightIn(min = if (compact) 48.dp else 52.dp)
             .transformedHeight(this, spec)
             .then(press.modifier)
             .semantics {
@@ -103,10 +103,11 @@ private fun TransformingLazyColumnItemScope.AppRow(
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f),
                 )
+                // 48dp touch target; hidden from TalkBack because the row already exposes the
+                // same "more actions" custom action (avoids a duplicate focus stop).
                 IconButton(
                     onClick = { actions.onActions(app) },
-                    modifier = Modifier.size(if (compact) 28.dp else 32.dp)
-                        .semantics { contentDescription = actionsLabel },
+                    modifier = Modifier.size(48.dp).clearAndSetSemantics { },
                 ) { Text("⋮") }
             }
         },

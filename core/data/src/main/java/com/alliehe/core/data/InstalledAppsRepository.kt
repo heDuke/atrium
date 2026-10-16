@@ -5,10 +5,13 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
+import android.os.SystemClock
 import androidx.core.content.ContextCompat
 import com.alliehe.core.model.AppEntry
 import com.alliehe.core.model.batchRanges
 import com.alliehe.core.model.componentKey
+import com.alliehe.core.model.visibleApps
+import kotlinx.coroutines.flow.first
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -26,7 +29,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-/** [loading] stays true until the last batch has been emitted. Icons are loaded lazily via [AppIconLoader]. */
+/** [loading] = more batches pending (apps may already be non-empty). Icons are loaded lazily via [AppIconLoader]. */
 data class AppCatalogSnapshot(
     val apps: List<AppEntry> = emptyList(),
     val loading: Boolean = true,
@@ -35,13 +38,16 @@ data class AppCatalogSnapshot(
 
 private const val FIRST_BATCH = 12
 private const val BATCH = 24
+private const val STALE_MS = 5 * 60_000L
 
 /** Application-lifetime catalog. Package queries and label loading never run on the UI thread. */
 @Singleton
 class InstalledAppsRepository @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val iconLoader: AppIconLoader,
+    private val userPrefsRepository: UserPrefsRepository,
 ) {
+    @Volatile private var lastLoadedAt = 0L
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val requests = Channel<Unit>(Channel.CONFLATED)
     private val invalidateIcons = AtomicBoolean(false)
@@ -70,6 +76,7 @@ class InstalledAppsRepository @Inject constructor(
                 try {
                     if (invalidateIcons.getAndSet(false)) iconLoader.evictAll()
                     loadIncrementally().collect { _catalog.value = it }
+                    lastLoadedAt = SystemClock.elapsedRealtime()
                 } catch (_: SecurityException) {
                     _catalog.value = _catalog.value.copy(loading = false, failed = true)
                 }
@@ -82,24 +89,34 @@ class InstalledAppsRepository @Inject constructor(
         requests.trySend(Unit)
     }
 
-    /** Emits the first screen quickly, then the rest in batches; previous apps stay visible meanwhile. */
+    /** For onResume: package broadcasts already trigger refresh, so only reload when stale. */
+    fun refreshIfStale(maxAgeMs: Long = STALE_MS) {
+        val last = lastLoadedAt
+        if (last == 0L || SystemClock.elapsedRealtime() - last > maxAgeMs) refresh()
+    }
+
+    /**
+     * Labels (cheap strings, no Drawables) are resolved on IO, then sorted in final display order
+     * (pinned → favorites → all, alphabetical; hidden last) *before* batching, so later batches
+     * only append below what is already on screen. The first 12 render first.
+     */
     private fun loadIncrementally(): Flow<AppCatalogSnapshot> = flow {
         val pm = context.packageManager
         val intent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
         val resolved = pm.queryIntentActivities(intent, PackageManager.ResolveInfoFlags.of(0L))
             .filter { val a = it.activityInfo; a != null && a.packageName != context.packageName && a.exported }
-        val previous = _catalog.value.apps.associateBy { it.componentKey }
-        val loaded = ArrayList<AppEntry>(resolved.size)
-        val ranges = batchRanges(resolved.size, FIRST_BATCH, BATCH)
+        val prefs = userPrefsRepository.prefs.first()
+        val entries = resolved.map { toEntry(pm, it) }.distinctBy { it.componentKey }
+        val visible = entries.visibleApps(prefs)
+        val visibleKeys = visible.mapTo(HashSet()) { it.componentKey }
+        val ordered = visible + entries.filter { it.componentKey !in visibleKeys }
+        // Re-loads with apps already on screen emit once, so the list never shrinks to a first batch.
+        val ranges = if (_catalog.value.apps.isEmpty()) batchRanges(ordered.size, FIRST_BATCH, BATCH)
+        else listOf(ordered.indices).filter { !it.isEmpty() }
         if (ranges.isEmpty()) emit(AppCatalogSnapshot(emptyList(), loading = false))
         ranges.forEachIndexed { i, range ->
-            for (idx in range) loaded += toEntry(pm, resolved[idx])
             val last = i == ranges.lastIndex
-            val fresh = loaded.distinctBy { it.componentKey }
-            // Until done, keep not-yet-reloaded apps from the previous snapshot to avoid flicker.
-            val keys = fresh.mapTo(HashSet()) { it.componentKey }
-            val apps = if (last) fresh else fresh + previous.values.filter { it.componentKey !in keys }
-            emit(AppCatalogSnapshot(apps = apps, loading = !last && previous.isEmpty()))
+            emit(AppCatalogSnapshot(apps = ordered.subList(0, range.last + 1).toList(), loading = !last))
             if (!last) yield()
         }
     }.flowOn(Dispatchers.IO)

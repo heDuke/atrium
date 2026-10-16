@@ -142,7 +142,8 @@ internal fun TransformingLazyColumnScope.drawerTopItems(
             ) { Text(stringResource(R.string.catalog_retry)) }
         }
     }
-    if (state.loading || state.sections.isEmpty()) {
+    // Only when nothing is on screen yet: later batches append silently below the first screen.
+    if (state.sections.isEmpty()) {
         item(key = "status") {
             TransformingContent(SurfaceTransformation(spec), Modifier.fillMaxWidth().transformedHeight(this, spec)) {
                 Text(

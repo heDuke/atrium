@@ -12,8 +12,9 @@ class CrownZoom(
     private val pxPerZoom: Float = 900f,
     private val revealPx: Float = 160f,
     private val epsilon: Float = 0.01f,
+    initial: Float = 1f,
 ) {
-    var zoom: Float = 1f
+    var zoom: Float = initial.coerceIn(min, max)
         private set
     var settingsRevealed: Boolean = false
         private set

@@ -6,7 +6,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.currentStateAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
@@ -43,7 +47,9 @@ fun LayoutThumbnail(mode: DrawerLayoutMode, animated: Boolean, modifier: Modifie
     val motion = LocalAtriumMotion.current
     val phase = remember { Animatable(0f) }
     val spec = MaterialTheme.motionScheme.slowSpatialSpec<Float>()
-    val run = animated && motion.decorative
+    // Pause when not RESUMED (ambient / screen off / covered) so the loop never burns frames unseen.
+    val lifecycle by LocalLifecycleOwner.current.lifecycle.currentStateAsState()
+    val run = animated && motion.decorative && lifecycle.isAtLeast(Lifecycle.State.RESUMED)
     LaunchedEffect(run, spec) {
         if (!run) { phase.snapTo(0f); return@LaunchedEffect }
         while (true) {

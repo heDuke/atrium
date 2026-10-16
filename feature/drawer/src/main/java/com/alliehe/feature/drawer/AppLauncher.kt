@@ -37,7 +37,21 @@ object AppLauncher {
             context.startActivity(intent, options)
             LaunchResult.Started
         } catch (_: ActivityNotFoundException) {
-            LaunchResult.Unavailable
+            // Fallback: the activity may have been renamed by an update; use the package's own entry.
+            fallback(context, entry, options)
+        } catch (_: SecurityException) {
+            fallback(context, entry, options) ?: LaunchResult.NotAllowed
+        } ?: LaunchResult.Unavailable
+    }
+
+    private fun fallback(context: Context, entry: AppEntry, options: android.os.Bundle?): LaunchResult? {
+        val intent = context.packageManager.getLaunchIntentForPackage(entry.packageName) ?: return null
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED)
+        return try {
+            context.startActivity(intent, options)
+            LaunchResult.Started
+        } catch (_: ActivityNotFoundException) {
+            null
         } catch (_: SecurityException) {
             LaunchResult.NotAllowed
         }
