@@ -90,7 +90,7 @@ private fun TransformingLazyColumnItemScope.AppRow(
         transformation = SurfaceTransformation(spec),
         icon = {
             AppIcon(
-                state.icons[app.entry.componentKey], app.entry.label,
+                app.entry,
                 modifier = Modifier.trackBounds(bounds),
                 size = if (compact) 24.dp else 32.dp,
             )

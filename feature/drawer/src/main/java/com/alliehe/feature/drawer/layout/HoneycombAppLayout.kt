@@ -31,7 +31,13 @@ import androidx.wear.compose.foundation.requestFocusOnHierarchyActive
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.snapshotFlow
+import com.alliehe.feature.drawer.LocalAppIconLoader
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.distinctUntilChanged
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
@@ -85,9 +91,10 @@ object HoneycombAppLayout : AppListLayout {
         val spacingPx = with(LocalDensity.current) { 58.dp.toPx() }
         val labelStyle = TextStyle(color = colors.onSurface, fontSize = 16.sp)
         val units = remember(apps.size) { HexGeometry.spiral(apps.size) }
-        val images = remember(state.icons, apps) {
-            apps.map { state.icons[it.entry.componentKey]?.asImageBitmap() }
-        }
+        val loader = LocalAppIconLoader.current
+        val iconPx = with(LocalDensity.current) { 40.dp.roundToPx() }
+        // Only icons within/near the viewport are decoded; others draw a letter placeholder.
+        val images = remember(apps) { mutableStateMapOf<String, ImageBitmap>() }
         val crown = remember { CrownZoom() }
         var zoom by remember { mutableFloatStateOf(crown.zoom) }
         val pan = remember { Animatable(Offset.Zero, Offset.VectorConverter) }
@@ -101,6 +108,24 @@ object HoneycombAppLayout : AppListLayout {
         val honeycombLabel = stringResource(R.string.drawer_honeycomb_a11y)
 
         fun spacing() = spacingPx * zoom
+        LaunchedEffect(apps, loader, iconPx) {
+            if (loader == null) return@LaunchedEffect
+            snapshotFlow {
+                val r = canvasSize.minDimension / 2f + spacing() * 1.5f
+                val p = pan.value
+                val s = spacing()
+                units.indices.filter { i ->
+                    Offset(p.x + units[i].x * s, p.y + units[i].y * s).getDistance() <= r
+                }
+            }.distinctUntilChanged().collectLatest { visible ->
+                visible.forEach { i ->
+                    val entry = apps[i].entry
+                    if (entry.componentKey !in images) {
+                        loader.load(entry, iconPx)?.let { images[entry.componentKey] = it.asImageBitmap() }
+                    }
+                }
+            }
+        }
         fun cellCenter(i: Int): Offset {
             val c = Offset(canvasSize.width / 2f, canvasSize.height / 2f) + pan.value
             return c + Offset(units[i].x * spacing(), units[i].y * spacing())
@@ -212,7 +237,7 @@ object HoneycombAppLayout : AppListLayout {
                     if (alpha <= 0f) return@forEachIndexed
                     val r = s * 0.44f * f * if (i == pressed && motion.decorative) 1.08f else 1f
                     drawCircle(colors.surfaceContainer, r, p, alpha)
-                    val image = images.getOrNull(i)
+                    val image = images[apps[i].entry.componentKey]
                     if (image != null) {
                         val side = (r * 1.6f).toInt().coerceAtLeast(1)
                         drawImage(

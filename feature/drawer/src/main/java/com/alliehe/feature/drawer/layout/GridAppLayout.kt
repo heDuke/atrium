@@ -100,6 +100,6 @@ private fun GridCell(app: DrawerAppItem, state: DrawerUiState, actions: DrawerAc
             customActions = listOf(CustomAccessibilityAction(actionsLabel) { actions.onActions(app); true })
         },
     ) {
-        AppIcon(state.icons[app.entry.componentKey], app.entry.label, size = icon)
+        AppIcon(app.entry, size = icon)
     }
 }

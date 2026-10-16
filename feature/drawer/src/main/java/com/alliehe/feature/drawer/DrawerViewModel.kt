@@ -1,8 +1,8 @@
 package com.alliehe.feature.drawer
 
-import android.graphics.Bitmap
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.alliehe.core.data.AppIconLoader
 import com.alliehe.core.data.InstalledAppsRepository
 import com.alliehe.core.data.UserPrefsRepository
 import com.alliehe.core.model.AppEntry
@@ -29,7 +29,6 @@ data class DrawerSection(val kind: SectionKind, val apps: List<DrawerAppItem>)
 /** Pure data for every [com.alliehe.feature.drawer.layout.AppListLayout]; rendering lives in the layouts. */
 data class DrawerUiState(
     val sections: List<DrawerSection> = emptyList(),
-    val icons: Map<String, Bitmap> = emptyMap(),
     val layout: DrawerLayoutMode = DrawerLayoutMode.List,
     val density: LayoutDensity = LayoutDensity.Standard,
     val loading: Boolean = true,
@@ -42,6 +41,7 @@ data class DrawerUiState(
 class DrawerViewModel @Inject constructor(
     private val installedAppsRepository: InstalledAppsRepository,
     private val userPrefsRepository: UserPrefsRepository,
+    val iconLoader: AppIconLoader,
 ) : ViewModel() {
     private val errors = Channel<Unit>(Channel.BUFFERED)
     val writeErrors = errors.receiveAsFlow()
@@ -58,7 +58,6 @@ class DrawerViewModel @Inject constructor(
                 DrawerSection(SectionKind.Favorites, s.favorites.items()),
                 DrawerSection(SectionKind.All, s.all.items()),
             ).filter { it.apps.isNotEmpty() },
-            icons = catalog.icons,
             layout = prefs.drawerLayout,
             density = prefs.layoutDensity,
             loading = catalog.loading,

@@ -2,7 +2,12 @@ package com.alliehe.feature.settings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.alliehe.core.data.AppIconLoader
 import com.alliehe.core.data.InstalledAppsRepository
+import com.alliehe.core.model.componentKey
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.distinctUntilChangedBy
+import kotlinx.coroutines.flow.mapLatest
 import com.alliehe.core.data.UserPrefsRepository
 import com.alliehe.core.model.AppEntry
 import android.graphics.Bitmap
@@ -24,10 +29,14 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
+private const val ONBOARDING_ICON_PX = 64
+
+@OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     private val userPrefsRepository: UserPrefsRepository,
     installedAppsRepository: InstalledAppsRepository,
+    private val iconLoader: AppIconLoader,
 ) : ViewModel() {
     val prefs: StateFlow<UserPrefs?> = userPrefsRepository.prefs
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
@@ -39,7 +48,9 @@ class SettingsViewModel @Inject constructor(
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
     /** A few installed app icons for the OOBE welcome pop-in. */
     val onboardingIcons: StateFlow<List<Bitmap>> = installedAppsRepository.catalog
-        .map { catalog -> catalog.apps.mapNotNull { catalog.icons[it.packageName + "/" + it.activityName] }.take(5) }
+        .map { catalog -> catalog.apps.take(5).map { it.componentKey }.joinToString() to catalog.apps.take(5) }
+        .distinctUntilChangedBy { it.first }
+        .mapLatest { (_, apps) -> apps.mapNotNull { iconLoader.load(it, ONBOARDING_ICON_PX) } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
     private val errors = Channel<Unit>(Channel.BUFFERED)
     val writeErrors = errors.receiveAsFlow()

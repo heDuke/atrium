@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -48,6 +49,7 @@ fun SearchRoute(viewModel: SearchViewModel = hiltViewModel()) {
                 ?.let { viewModel.onQueryChange(it.toString()) }
         }
     }
+    CompositionLocalProvider(LocalAppIconLoader provides viewModel.iconLoader) {
     ScreenScaffold(scrollState = listState) { padding ->
         TransformingLazyColumn(state = listState, contentPadding = padding, modifier = Modifier.fillMaxSize()) {
             item {
@@ -112,10 +114,11 @@ fun SearchRoute(viewModel: SearchViewModel = hiltViewModel()) {
                     },
                     modifier = Modifier.fillMaxWidth().transformedHeight(this, spec),
                     transformation = SurfaceTransformation(spec),
-                    icon = { AppIcon(uiState.icons[entry.componentKey], entry.label) },
+                    icon = { AppIcon(entry) },
                     label = { Text(entry.label, maxLines = 2, overflow = TextOverflow.Ellipsis) },
                 )
             }
         }
     }
+}
 }

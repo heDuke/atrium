@@ -6,6 +6,7 @@ import androidx.compose.animation.core.snap
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -64,12 +65,14 @@ fun DrawerRoute(
         )
     }
     // Layout switch: cross-fade with M3 effects spring (snap when motion is reduced).
+    CompositionLocalProvider(LocalAppIconLoader provides viewModel.iconLoader) {
     Crossfade(
         targetState = uiState.layout,
         animationSpec = if (motion.fades) MaterialTheme.motionScheme.defaultEffectsSpec() else snap(),
         label = "drawer-layout",
     ) { mode ->
         appListLayoutFor(mode).Content(uiState, actions, Modifier)
+    }
     }
 }
 
