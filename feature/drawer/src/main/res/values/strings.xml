@@ -34,4 +34,15 @@
     <string name="drawer_section_favorites">收藏</string>
     <string name="drawer_section_all">全部应用</string>
     <string name="drawer_honeycomb_a11y">蜂窝应用布局，可用操作打开应用或设置</string>
+    <string name="drawer_section_recents">最近使用</string>
+    <string name="drawer_back_to_watchface">返回表盘</string>
+    <string name="drawer_status_battery">电量 %1$d%%</string>
+    <string name="drawer_status_charging">充电中 · %1$d%%</string>
+    <string name="drawer_action_more">更多</string>
+    <string name="drawer_shortcuts">快捷方式</string>
+    <string name="shortcut_failed">快捷方式无法打开</string>
+    <string name="drawer_manage_hidden">管理隐藏的应用</string>
+    <string name="honeycomb_move_earlier">前移</string>
+    <string name="honeycomb_move_later">后移</string>
+    <string name="honeycomb_reorder_hint">长按后拖动可调整位置</string>
 </resources>
