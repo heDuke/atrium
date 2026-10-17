@@ -16,6 +16,7 @@ import com.alliehe.core.model.LayoutDensity
 import kotlinx.coroutines.flow.map
 import com.alliehe.core.model.PerformanceMode
 import com.alliehe.core.model.UserPrefs
+import com.alliehe.core.color.ThemeSource
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.io.IOException
 import javax.inject.Inject
@@ -42,7 +43,7 @@ class SettingsViewModel @Inject constructor(
         installedAppsRepository.catalog, userPrefsRepository.prefs,
     ) { catalog, prefs ->
         catalog.apps.filter { it.packageName in prefs.hiddenPackages }
-            .distinctBy { it.packageName }.sortedBy { it.label }
+            .distinctBy { it.packageName }.sortedWith(com.alliehe.core.model.appAlphabeticalComparator())
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
     /** A few installed app icons for the OOBE welcome pop-in. */
     val onboardingIcons: StateFlow<List<Bitmap>> = installedAppsRepository.catalog
@@ -60,7 +61,13 @@ class SettingsViewModel @Inject constructor(
     fun setPerformanceMode(mode: PerformanceMode) = write { userPrefsRepository.setPerformanceMode(mode) }
     fun setPowerSaverEnabled(enabled: Boolean) = write { userPrefsRepository.setPowerSaverEnabled(enabled) }
     fun setReduceMotion(enabled: Boolean) = write { userPrefsRepository.setReduceMotion(enabled) }
-    fun restoreHidden(packageName: String) = write { userPrefsRepository.hidePackage(packageName, false) }
+    fun restoreHidden(packageName: String, onDone: () -> Unit = {}) =
+        write(onDone) { userPrefsRepository.hidePackage(packageName, false) }
+    fun setThemeSource(source: ThemeSource) = write { userPrefsRepository.setThemeSource(source) }
+    fun selectSeed(argb: Int) = write { userPrefsRepository.selectSeed(argb) }
+    fun setThemedIcons(enabled: Boolean) = write { userPrefsRepository.setThemedIcons(enabled) }
+    fun resetHoneycombOrder(onDone: () -> Unit) = write(onDone) { userPrefsRepository.setHoneycombOrder(emptyList()) }
+    fun clearRecents(onDone: () -> Unit) = write(onDone) { userPrefsRepository.clearRecents() }
 
     fun completeOnboarding(layout: DrawerLayoutMode, onCompleted: () -> Unit) {
         if (_savingOnboarding.value) return
@@ -77,9 +84,14 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    private fun write(block: suspend () -> Unit) {
+    private fun write(onDone: () -> Unit = {}, block: suspend () -> Unit) {
         viewModelScope.launch {
-            try { block() } catch (_: IOException) { errors.send(Unit) }
+            try {
+                block()
+                onDone()
+            } catch (_: IOException) {
+                errors.send(Unit)
+            }
         }
     }
 }
