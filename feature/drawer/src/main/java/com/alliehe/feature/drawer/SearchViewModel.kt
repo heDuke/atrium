@@ -7,7 +7,9 @@ import com.alliehe.core.data.AppIconLoader
 import com.alliehe.core.data.InstalledAppsRepository
 import com.alliehe.core.data.UserPrefsRepository
 import com.alliehe.core.model.AppEntry
+import com.alliehe.core.model.componentKey
 import com.alliehe.core.model.visibleApps
+import kotlinx.coroutines.launch
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.SharingStarted
@@ -25,7 +27,7 @@ data class SearchUiState(
 @HiltViewModel
 class SearchViewModel @Inject constructor(
     private val installedAppsRepository: InstalledAppsRepository,
-    userPrefsRepository: UserPrefsRepository,
+    private val userPrefsRepository: UserPrefsRepository,
     val iconLoader: AppIconLoader,
     private val savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
@@ -39,4 +41,7 @@ class SearchViewModel @Inject constructor(
 
     fun onQueryChange(value: String) { savedStateHandle["query"] = value }
     fun refresh() = installedAppsRepository.refresh()
+    fun recordLaunch(entry: AppEntry) {
+        viewModelScope.launch { runCatching { userPrefsRepository.recordLaunch(entry.componentKey) } }
+    }
 }

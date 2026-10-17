@@ -16,8 +16,21 @@ import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.unit.dp
+import androidx.wear.compose.foundation.lazy.TransformingLazyColumnItemScope
 import androidx.wear.compose.foundation.lazy.TransformingLazyColumnScope
+import androidx.wear.compose.material3.ButtonDefaults
+import androidx.wear.compose.material3.Icon
+import androidx.wear.compose.material3.placeholder
+import androidx.wear.compose.material3.placeholderShimmer
+import androidx.wear.compose.material3.rememberPlaceholderState
+import com.alliehe.core.ui.EmptyState
+import com.alliehe.core.ui.R as UiR
 import androidx.wear.compose.material3.Button
 import androidx.wear.compose.material3.EdgeButton
 import androidx.wear.compose.material3.EdgeButtonSize
@@ -28,7 +41,6 @@ import androidx.wear.compose.material3.lazy.TransformationSpec
 import androidx.wear.compose.material3.lazy.transformedHeight
 import com.alliehe.core.model.DrawerLayoutMode
 import com.alliehe.core.theme.LocalAtriumMotion
-import com.alliehe.core.theme.TransformingContent
 import com.alliehe.feature.drawer.DrawerAppItem
 import com.alliehe.feature.drawer.DrawerUiState
 import com.alliehe.feature.drawer.R
@@ -43,6 +55,11 @@ class DrawerActions(
     val onOpenSearch: () -> Unit,
     val onOpenSettings: () -> Unit,
     val onRetry: () -> Unit,
+    val onOpenHidden: () -> Unit = onOpenSettings,
+    /** Honeycomb reorder: indices into [DrawerUiState.honeycombApps]. */
+    val onReorder: (from: Int, to: Int) -> Unit = { _, _ -> },
+    val onBackToWatchFace: () -> Unit = {},
+    val onTogglePinned: (DrawerAppItem) -> Unit = {},
 )
 
 /** Rendering strategy for the drawer. Data (catalog + UserPrefs) arrives pre-sorted in [DrawerUiState]. */
@@ -99,6 +116,7 @@ internal fun rememberLongPress(onTriggered: () -> Unit): LongPressHandle {
 @Composable
 internal fun sectionTitle(kind: SectionKind): String = stringResource(
     when (kind) {
+        SectionKind.Recents -> R.string.drawer_section_recents
         SectionKind.Pinned -> R.string.drawer_section_pinned
         SectionKind.Favorites -> R.string.drawer_section_favorites
         SectionKind.All -> R.string.drawer_section_all
@@ -120,7 +138,10 @@ internal fun SettingsEdgeButton(onClick: () -> Unit) {
     }
 }
 
-/** Search button (top), retry and loading/empty rows shared by the TLC-based layouts. */
+/**
+ * Top of the TLC layouts: search, glance card (date/battery), back-to-watch-face, retry, and — only
+ * while nothing is on screen — shimmer placeholders (loading) or an empty state with an action.
+ */
 internal fun TransformingLazyColumnScope.drawerTopItems(
     state: DrawerUiState,
     actions: DrawerActions,
@@ -133,6 +154,17 @@ internal fun TransformingLazyColumnScope.drawerTopItems(
             transformation = SurfaceTransformation(spec),
         ) { Text(stringResource(R.string.drawer_open_search)) }
     }
+    item(key = "status") { StatusCard(spec) }
+    item(key = "watchface") {
+        Button(
+            onClick = actions.onBackToWatchFace,
+            colors = ButtonDefaults.filledTonalButtonColors(),
+            modifier = Modifier.fillMaxWidth().transformedHeight(this, spec),
+            transformation = SurfaceTransformation(spec),
+            icon = { Icon(painterResource(UiR.drawable.ic_atrium_watch), contentDescription = null) },
+            label = { Text(stringResource(R.string.drawer_back_to_watchface)) },
+        )
+    }
     if (state.refreshFailed) {
         item(key = "retry") {
             Button(
@@ -144,14 +176,34 @@ internal fun TransformingLazyColumnScope.drawerTopItems(
     }
     // Only when nothing is on screen yet: later batches append silently below the first screen.
     if (state.sections.isEmpty()) {
-        item(key = "status") {
-            TransformingContent(SurfaceTransformation(spec), Modifier.fillMaxWidth().transformedHeight(this, spec)) {
-                Text(
-                    stringResource(if (state.loading) R.string.catalog_loading else R.string.drawer_empty_hint),
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth(),
+        if (state.loading) {
+            items(PLACEHOLDER_ROWS, key = { "placeholder-$it" }) { PlaceholderRow(spec) }
+        } else {
+            item(key = "empty") {
+                EmptyState(
+                    stringResource(R.string.drawer_empty_hint), spec,
+                    actionLabel = stringResource(R.string.drawer_manage_hidden),
+                    onAction = actions.onOpenHidden,
+                    actionIcon = UiR.drawable.ic_atrium_restore,
                 )
             }
         }
     }
+}
+
+private const val PLACEHOLDER_ROWS = 3
+
+/** Shimmering stand-in for an app row while the first catalog batch loads. */
+@Composable
+private fun TransformingLazyColumnItemScope.PlaceholderRow(spec: TransformationSpec) {
+    val placeholder = rememberPlaceholderState(isVisible = true)
+    Button(
+        onClick = {},
+        enabled = false,
+        modifier = Modifier.fillMaxWidth().transformedHeight(this, spec).placeholderShimmer(placeholder)
+            .clearAndSetSemantics { },
+        transformation = SurfaceTransformation(spec),
+        icon = { Box(Modifier.size(32.dp).placeholder(placeholder, CircleShape)) },
+        label = { Text("", modifier = Modifier.fillMaxWidth().placeholder(placeholder)) },
+    )
 }

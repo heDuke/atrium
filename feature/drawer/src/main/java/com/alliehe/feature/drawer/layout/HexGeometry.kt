@@ -66,4 +66,41 @@ object HexGeometry {
         }
         return best
     }
+
+    /** Largest distance of any point from the origin (pan bounds of the honeycomb, in hex units). */
+    fun extent(points: List<HexPoint>): Float = points.maxOfOrNull { sqrt(it.x * it.x + it.y * it.y) } ?: 0f
+
+    /**
+     * Rubber band: inside [limit] the offset is unchanged; beyond it the excess is compressed so the
+     * result approaches `limit + maxOverscroll` asymptotically (never a hard stop).
+     */
+    fun rubberBand(offset: HexPoint, limit: Float, maxOverscroll: Float = 0.75f): HexPoint {
+        val d = sqrt(offset.x * offset.x + offset.y * offset.y)
+        if (d <= limit || d == 0f) return offset
+        val excess = d - limit
+        val banded = limit + maxOverscroll * (1f - 1f / (1f + excess / maxOverscroll))
+        val k = banded / d
+        return HexPoint(offset.x * k, offset.y * k)
+    }
+
+    /** Hard clamp to the disc of radius [limit] (auto-pan never overshoots). */
+    fun clamp(offset: HexPoint, limit: Float): HexPoint {
+        val d = sqrt(offset.x * offset.x + offset.y * offset.y)
+        if (d <= limit || d == 0f) return offset
+        val k = limit / d
+        return HexPoint(offset.x * k, offset.y * k)
+    }
+
+    /**
+     * Edge auto-pan while dragging an icon: zero inside [zone]×[radius]; towards the rim it grows
+     * linearly to 1, pointing from the centre to the finger ([finger] is relative to the centre, px).
+     */
+    fun edgePan(finger: HexPoint, radius: Float, zone: Float = 0.7f): HexPoint {
+        if (radius <= 0f) return HexPoint(0f, 0f)
+        val d = sqrt(finger.x * finger.x + finger.y * finger.y)
+        val start = radius * zone
+        if (d <= start || d == 0f) return HexPoint(0f, 0f)
+        val strength = ((d - start) / (radius - start)).coerceIn(0f, 1f)
+        return HexPoint(finger.x / d * strength, finger.y / d * strength)
+    }
 }

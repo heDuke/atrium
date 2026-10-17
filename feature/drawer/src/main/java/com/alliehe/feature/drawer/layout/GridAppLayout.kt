@@ -21,21 +21,24 @@ import androidx.wear.compose.foundation.lazy.TransformingLazyColumn
 import androidx.wear.compose.foundation.lazy.items
 import androidx.wear.compose.foundation.lazy.rememberTransformingLazyColumnState
 import androidx.wear.compose.material3.FilledTonalIconButton
-import androidx.wear.compose.material3.ListHeader
 import androidx.wear.compose.material3.ScreenScaffold
 import androidx.wear.compose.material3.SurfaceTransformation
-import androidx.wear.compose.material3.Text
 import androidx.wear.compose.material3.lazy.rememberTransformationSpec
 import androidx.wear.compose.material3.lazy.transformedHeight
 import com.alliehe.core.model.LayoutDensity
 import com.alliehe.core.model.componentKey
 import com.alliehe.core.theme.TransformingContent
-import com.alliehe.feature.drawer.AppIcon
+import com.alliehe.core.ui.AppIcon
+import com.alliehe.core.ui.SectionHeader
+import androidx.compose.ui.platform.LocalConfiguration
 import com.alliehe.feature.drawer.DrawerAppItem
 import com.alliehe.feature.drawer.DrawerUiState
 import com.alliehe.feature.drawer.R
 
 private const val COLUMNS = 2
+
+/** Extra side inset for the first/last row, as a fraction of the screen width (round-screen chord). */
+private const val EDGE_ROW_INSET_FRACTION = 0.1f
 
 /**
  * (2) Grid: TLC rows of a fixed 2 columns, icon-only, ListHeader per section.
@@ -50,6 +53,7 @@ object GridAppLayout : AppListLayout {
         val compact = state.density == LayoutDensity.Compact
         val cell = if (compact) 44.dp else 52.dp
         val icon = if (compact) 30.dp else 36.dp
+        val edgeInset = (LocalConfiguration.current.screenWidthDp * EDGE_ROW_INSET_FRACTION).dp
         val chunked = state.sections.map { it to it.apps.chunked(COLUMNS) }
         val firstRow = chunked.firstOrNull { it.second.isNotEmpty() }?.second?.first()
         val lastRow = chunked.lastOrNull { it.second.isNotEmpty() }?.second?.last()
@@ -57,16 +61,11 @@ object GridAppLayout : AppListLayout {
             TransformingLazyColumn(state = listState, contentPadding = padding, modifier = modifier.fillMaxSize()) {
                 drawerTopItems(state, actions, spec)
                 chunked.forEach { (section, rows) ->
-                    item(key = "header-${section.kind}") {
-                        ListHeader(
-                            modifier = Modifier.fillMaxWidth().transformedHeight(this, spec),
-                            transformation = SurfaceTransformation(spec),
-                        ) { Text(sectionTitle(section.kind)) }
-                    }
+                    item(key = "header-${section.kind}") { SectionHeader(sectionTitle(section.kind), spec) }
                     // Positional keys: batches only append, so existing rows keep their identity.
                     items(rows.size, key = { index -> "${section.kind}-$index" }) { index ->
                         val row = rows[index]
-                        val inset = if (row === firstRow || row === lastRow) 20.dp else 0.dp
+                        val inset = if (row === firstRow || row === lastRow) edgeInset else 0.dp
                         TransformingContent(
                             SurfaceTransformation(spec),
                             Modifier.fillMaxWidth().transformedHeight(this, spec).padding(horizontal = inset),
