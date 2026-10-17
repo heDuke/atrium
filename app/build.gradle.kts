@@ -8,6 +8,8 @@ plugins {
 android {
     namespace = "com.alliehe.atrium"
     compileSdk = 37
+    // Same NDK as :core:color-native so release packaging can strip libatrium_color.so.
+    ndkVersion = "29.0.14206865"
 
     defaultConfig {
         applicationId = "com.alliehe.atrium"
@@ -16,6 +18,10 @@ android {
         versionCode = 1
         versionName = "0.1.0-scaffold"
         buildConfigField("boolean", "BENCHMARK_HOOKS", "false")
+        // :core:color-native ships these ABIs (Wear devices are arm64/armv7; x86_64 for emulators).
+        ndk {
+            abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86_64")
+        }
     }
 
     buildTypes {
@@ -63,6 +69,8 @@ dependencies {
     implementation(project(":core:model"))
     implementation(project(":core:data"))
     implementation(project(":core:theme"))
+    implementation(project(":core:ui"))
+    implementation(project(":core:color-native"))
     implementation(project(":core:navigation"))
     implementation(project(":feature:drawer"))
     implementation(project(":feature:settings"))
@@ -85,6 +93,7 @@ dependencies {
     implementation(libs.wear.compose.foundation)
     implementation(libs.wear.compose.navigation)
     implementation(libs.wear.compose.ui.tooling)
+    implementation(libs.wear.tiles)
 
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
