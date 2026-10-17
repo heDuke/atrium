@@ -9,6 +9,7 @@
 
 - No Horologist artifacts
 - No phone Material3 / Wear Material 2.5 in App or Tile UI trees
+- No Material Color Utilities / material-kolor; colour science is Atrium's own clean-room code
 - App UI = Wear Compose Material3; Tile = ProtoLayout Material3 (separate trees)
 - Launcher with optional system Home role; no OEM / power / crown routing assumptions
 
@@ -18,7 +19,11 @@
 |------|----------|--------|
 | App catalog | `:core:data` `InstalledAppsRepository` | MAIN+LAUNCHER query; naming may later align to `AppCatalog` |
 | User prefs / F2 / G3 / G5 | `:core:data` `UserPrefsRepository` | Single source of truth |
-| Theme inputs | `:app` `ThemeRepository` + `ThemeSeedProvider` | Unidirectional; `:core:theme` must not depend on watchface |
+| Theme inputs | `:app` `ThemeRepository` (prefs + `WatchFaceSeed.seed`) | Unidirectional; `:core:theme` must not depend on watchface |
+| Scheme generation | `:core:color` `SchemeGenerator` (+ `WearColorRoles`, `ThemeResolver`) | Implemented by `:core:color-native` `NativeSchemeGenerator` (JNI, Kotlin fallback); bound in `:core:data` Hilt module |
+| Seed extraction | `SchemeGenerator.extractSeed` / `NativeSchemeGenerator.dominantColor(Bitmap)` | Used by icon tint, Honeycomb, `WatchFaceSeed.publishFromBitmap` |
+| Shared UI | `:core:ui` (`AppIcon`, `MessageHost`, `SectionHeader`, `EmptyState`) | Features share UI without depending on each other |
+| Shortcuts / system nav | `:core:data` `AppShortcuts`, `SystemNavigation`, `DefaultLauncherProbe` | Shortcuts only while HOME is held |
 | Navigation routes | `:core:navigation` `Routes` | Feature screens do not depend on each other |
 
 ## Non-goals this version
