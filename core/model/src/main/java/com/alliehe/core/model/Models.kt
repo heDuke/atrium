@@ -1,5 +1,7 @@
 package com.alliehe.core.model
 
+import com.alliehe.core.color.ThemeSource
+
 /**
  * Installed app entry with MAIN+LAUNCHER (F1 / G1).
  */
@@ -8,6 +10,10 @@ data class AppEntry(
     val activityName: String,
     val label: String,
     val isSystemApp: Boolean = false,
+    /** Lower-case ASCII romanization of [label] (Han → pinyin), used for sorting and search. */
+    val romanized: String = "",
+    /** First letter of each romanized word ("微信" → "wx", "Google Maps" → "gm"). */
+    val initials: String = "",
 )
 
 enum class PerformanceMode {
@@ -42,6 +48,13 @@ data class UserPrefs(
     val reduceMotion: Boolean = false,
     val onboardingCompleted: Boolean = false,
     val seedColorArgb: Long? = null,
+    val themeSource: ThemeSource = ThemeSource.System,
+    /** Tint adaptive icons that ship a monochrome layer with the theme (off by default). */
+    val themedIcons: Boolean = false,
+    /** Most recent first; component keys, at most [RECENTS_MAX]. */
+    val recentComponents: List<String> = emptyList(),
+    /** User-arranged honeycomb order (component keys); apps not listed follow in default order. */
+    val honeycombOrder: List<String> = emptyList(),
 ) {
     /** Effective motion/performance mode after G3 reduce-motion lock. */
     val effectivePerformanceMode: PerformanceMode
@@ -100,3 +113,9 @@ data class UserPrefs(
 
 private fun PerformanceMode.coerceNonSaver(): PerformanceMode =
     takeUnless { it == PerformanceMode.PowerSaver } ?: PerformanceMode.Balanced
+
+const val RECENTS_MAX = 5
+
+/** Moves [componentKey] to the front of [recents], de-duplicated and capped at [max]. */
+fun recordRecent(recents: List<String>, componentKey: String, max: Int = RECENTS_MAX): List<String> =
+    (listOf(componentKey) + recents.filter { it != componentKey }).take(max)
