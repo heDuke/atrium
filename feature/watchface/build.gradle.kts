@@ -24,5 +24,8 @@ kotlin {
 
 dependencies {
     implementation(project(":core:model"))
+    implementation(project(":core:color-native"))
     implementation(libs.androidx.core.ktx)
+    implementation(libs.kotlinx.coroutines.core)
+    testImplementation(libs.junit)
 }
