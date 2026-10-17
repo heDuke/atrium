@@ -1,8 +1,12 @@
 package com.alliehe.feature.settings
 
+import com.alliehe.core.data.DefaultLauncherProbe
+import com.alliehe.core.data.HomeRoleState
+
 import android.content.ActivityNotFoundException
 import android.graphics.Bitmap
-import android.widget.Toast
+import com.alliehe.core.ui.LocalMessageHost
+import com.alliehe.core.ui.MessageKind
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -191,8 +195,10 @@ private fun LayoutStep(
                 ListHeader(modifier = Modifier.fillMaxWidth().transformedHeight(this, spec),
                     transformation = SurfaceTransformation(spec)) { Text(stringResource(R.string.onboarding_pick_layout)) }
             }
-            DrawerLayoutMode.entries.forEach { mode ->
-                item(key = mode.name) { LayoutOption(mode, mode == selected, { onSelect(mode) }, spec) }
+            item(key = "layouts") {
+                RadioGroupItem(spec) {
+                    DrawerLayoutMode.entries.forEach { mode -> LayoutOption(mode, mode == selected, { onSelect(mode) }) }
+                }
             }
         }
     }
@@ -201,6 +207,7 @@ private fun LayoutStep(
 @Composable
 private fun DefaultLauncherStep(saving: Boolean, onDone: () -> Unit) {
     val context = LocalContext.current
+    val messages = LocalMessageHost.current
     var state by remember { mutableStateOf(DefaultLauncherProbe.state(context)) }
     val roleLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         state = DefaultLauncherProbe.state(context)
@@ -227,9 +234,9 @@ private fun DefaultLauncherStep(saving: Boolean, onDone: () -> Unit) {
                             } else try {
                                 roleLauncher.launch(intent)
                             } catch (_: ActivityNotFoundException) {
-                                Toast.makeText(context, R.string.settings_home_unavailable, Toast.LENGTH_SHORT).show()
+                                messages.show(MessageKind.Info, R.string.settings_home_unavailable)
                             } catch (_: SecurityException) {
-                                Toast.makeText(context, R.string.settings_home_unavailable, Toast.LENGTH_SHORT).show()
+                                messages.show(MessageKind.Info, R.string.settings_home_unavailable)
                             }
                         },
                         modifier = Modifier.fillMaxWidth().transformedHeight(this, spec),

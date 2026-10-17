@@ -34,6 +34,7 @@ dependencies {
     implementation(project(":core:theme"))
     implementation(project(":core:data"))
     implementation(project(":core:navigation"))
+    implementation(project(":core:ui"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)

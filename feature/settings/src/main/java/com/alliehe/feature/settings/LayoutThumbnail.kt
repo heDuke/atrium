@@ -109,19 +109,17 @@ internal fun layoutLabel(mode: DrawerLayoutMode): String = stringResource(
 
 /** Selectable layout option row used by Settings and the OOBE picker. */
 @Composable
-internal fun TransformingLazyColumnItemScope.LayoutOption(
+internal fun LayoutOption(
     mode: DrawerLayoutMode,
     selected: Boolean,
     onSelect: () -> Unit,
-    spec: TransformationSpec,
 ) {
     Button(
         onClick = onSelect,
-        modifier = Modifier.fillMaxWidth().transformedHeight(this, spec).semantics {
+        modifier = Modifier.fillMaxWidth().semantics {
             this.selected = selected
             role = Role.RadioButton
         },
-        transformation = SurfaceTransformation(spec),
         colors = if (selected) ButtonDefaults.buttonColors() else ButtonDefaults.filledTonalButtonColors(),
         icon = { LayoutThumbnail(mode, animated = selected) },
         label = { Text(layoutLabel(mode)) },
