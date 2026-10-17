@@ -5,6 +5,8 @@ plugins {
 android {
     namespace = "com.alliehe.atrium.benchmark"
     compileSdk = 37
+    // Same NDK as :core:color-native so release packaging can strip libatrium_color.so.
+    ndkVersion = "29.0.14206865"
 
     defaultConfig {
         minSdk = 33
