@@ -11,6 +11,7 @@ import com.alliehe.core.model.AppEntry
 import com.alliehe.core.model.batchRanges
 import com.alliehe.core.model.componentKey
 import com.alliehe.core.model.visibleApps
+import com.alliehe.core.model.withPinyin
 import kotlinx.coroutines.flow.first
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
@@ -121,6 +122,16 @@ class InstalledAppsRepository @Inject constructor(
         }
     }.flowOn(Dispatchers.IO)
 
+    /** ICU Han→pinyin (android.icu, part of the platform). Transliterator instances are not thread-safe. */
+    private val transliterator by lazy {
+        runCatching { android.icu.text.Transliterator.getInstance(com.alliehe.core.model.PinyinKeys.TRANSLITERATOR_ID) }.getOrNull()
+    }
+
+    private fun romanize(text: String): String {
+        val t = transliterator ?: return text
+        return synchronized(t) { t.transliterate(text) }
+    }
+
     private fun toEntry(pm: PackageManager, info: android.content.pm.ResolveInfo): AppEntry {
         val activity = info.activityInfo
         return AppEntry(
@@ -133,6 +144,6 @@ class InstalledAppsRepository @Inject constructor(
             },
             isSystemApp = (activity.applicationInfo.flags and
                 android.content.pm.ApplicationInfo.FLAG_SYSTEM) != 0,
-        )
+        ).withPinyin(::romanize)
     }
 }

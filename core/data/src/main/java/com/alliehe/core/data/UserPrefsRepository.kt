@@ -3,7 +3,9 @@ package com.alliehe.core.data
 import android.content.Context
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
+import com.alliehe.core.color.ThemeSource
 import com.alliehe.core.model.DrawerLayoutMode
+import com.alliehe.core.model.recordRecent
 import com.alliehe.core.model.LayoutDensity
 import com.alliehe.core.model.PerformanceMode
 import com.alliehe.core.model.UserPrefs
@@ -65,6 +67,40 @@ class UserPrefsRepository @Inject constructor(
             } else {
                 prefs[UserPrefsKeys.SEED_COLOR] = argb
             }
+        }
+    }
+
+    suspend fun setThemeSource(source: ThemeSource) {
+        context.userPrefsDataStore.edit { it[UserPrefsKeys.THEME_SOURCE] = source.name }
+    }
+
+    /** Picking a preset also switches the source to Seed so the choice is visible immediately. */
+    suspend fun selectSeed(argb: Int) {
+        context.userPrefsDataStore.edit {
+            it[UserPrefsKeys.SEED_COLOR] = argb.toLong() and 0xFFFFFFFFL
+            it[UserPrefsKeys.THEME_SOURCE] = ThemeSource.Seed.name
+        }
+    }
+
+    suspend fun setThemedIcons(enabled: Boolean) {
+        context.userPrefsDataStore.edit { it[UserPrefsKeys.THEMED_ICONS] = enabled }
+    }
+
+    /** Recents: most recent first, de-duplicated, capped at [com.alliehe.core.model.RECENTS_MAX]. */
+    suspend fun recordLaunch(componentKey: String) {
+        context.userPrefsDataStore.edit {
+            it[UserPrefsKeys.RECENTS] = recordRecent(it[UserPrefsKeys.RECENTS].toKeyList(), componentKey).toKeyString()
+        }
+    }
+
+    suspend fun clearRecents() {
+        context.userPrefsDataStore.edit { it.remove(UserPrefsKeys.RECENTS) }
+    }
+
+    suspend fun setHoneycombOrder(order: List<String>) {
+        context.userPrefsDataStore.edit {
+            if (order.isEmpty()) it.remove(UserPrefsKeys.HONEYCOMB_ORDER)
+            else it[UserPrefsKeys.HONEYCOMB_ORDER] = order.toKeyString()
         }
     }
 
