@@ -26,10 +26,12 @@ kotlin {
 
 dependencies {
     implementation(project(":core:model"))
+    api(project(":core:color-native"))
     implementation(libs.androidx.core.ktx)
     implementation(libs.datastore.preferences)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
     testImplementation(libs.junit)
+    testImplementation(libs.icu4j)
 }
