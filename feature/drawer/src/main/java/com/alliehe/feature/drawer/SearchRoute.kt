@@ -3,7 +3,6 @@ package com.alliehe.feature.drawer
 import android.app.Activity
 import android.app.RemoteInput
 import android.content.ActivityNotFoundException
-import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
@@ -19,7 +18,6 @@ import com.alliehe.core.theme.LocalAtriumMotion
 import com.alliehe.feature.drawer.layout.BoundsHolder
 import com.alliehe.feature.drawer.layout.rememberLongPress
 import com.alliehe.feature.drawer.layout.trackBounds
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -41,7 +39,11 @@ import androidx.wear.compose.material3.lazy.rememberTransformationSpec
 import androidx.wear.compose.material3.lazy.transformedHeight
 import androidx.wear.input.RemoteInputIntentHelper
 import com.alliehe.core.model.componentKey
-import com.alliehe.core.theme.TransformingContent
+import com.alliehe.core.ui.AppIcon
+import com.alliehe.core.ui.EmptyState
+import com.alliehe.core.ui.LocalMessageHost
+import com.alliehe.core.ui.MessageKind
+import com.alliehe.core.ui.R as UiR
 
 private const val SEARCH_INPUT_KEY = "search_query"
 
@@ -54,6 +56,7 @@ fun SearchRoute(
     val motion = LocalAtriumMotion.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val messages = LocalMessageHost.current
     val listState = rememberTransformingLazyColumnState()
     val spec = rememberTransformationSpec()
     val queryHint = stringResource(R.string.search_query_hint)
@@ -63,7 +66,6 @@ fun SearchRoute(
                 ?.let { viewModel.onQueryChange(it.toString()) }
         }
     }
-    CompositionLocalProvider(LocalAppIconLoader provides viewModel.iconLoader) {
     ScreenScaffold(scrollState = listState) { padding ->
         TransformingLazyColumn(state = listState, contentPadding = padding, modifier = Modifier.fillMaxSize()) {
             item {
@@ -81,9 +83,9 @@ fun SearchRoute(
                         try {
                             inputLauncher.launch(intent)
                         } catch (_: ActivityNotFoundException) {
-                            Toast.makeText(context, R.string.search_input_unavailable, Toast.LENGTH_SHORT).show()
+                            messages.show(MessageKind.Failure, R.string.search_input_unavailable)
                         } catch (_: SecurityException) {
-                            Toast.makeText(context, R.string.search_input_unavailable, Toast.LENGTH_SHORT).show()
+                            messages.show(MessageKind.Failure, R.string.search_input_unavailable)
                         }
                     },
                     modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).transformedHeight(this, spec),
@@ -108,17 +110,16 @@ fun SearchRoute(
                         transformation = SurfaceTransformation(spec)) { Text(stringResource(R.string.catalog_retry)) }
                 }
             }
-            if (uiState.loading || uiState.results.isEmpty()) {
+            if (uiState.loading && uiState.results.isEmpty()) {
+                item { EmptyState(stringResource(R.string.catalog_loading), spec) }
+            } else if (uiState.results.isEmpty()) {
                 item {
-                    TransformingContent(SurfaceTransformation(spec), Modifier.fillMaxWidth().transformedHeight(this, spec)) {
-                        Text(stringResource(when {
-                            uiState.loading -> R.string.catalog_loading
-                            uiState.query.isBlank() -> R.string.drawer_empty_hint
-                            else -> R.string.search_no_results
-                        }), textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
-                    }
+                    if (uiState.query.isBlank()) EmptyState(stringResource(R.string.drawer_empty_hint), spec)
+                    else EmptyState(stringResource(R.string.search_no_results), spec,
+                        actionLabel = stringResource(R.string.search_clear), onAction = { viewModel.onQueryChange("") },
+                        actionIcon = UiR.drawable.ic_atrium_restore)
                 }
-            } else items(uiState.results, key = { it.componentKey }) { entry ->
+            if (uiState.results.isNotEmpty()) items(uiState.results, key = { it.componentKey }) { entry ->
                 val bounds = remember { BoundsHolder() }
                 val press = rememberLongPress { onOpenActions(entry.componentKey) }
                 val actionsLabel = stringResource(R.string.drawer_app_actions_for, entry.label)
@@ -126,8 +127,10 @@ fun SearchRoute(
                     onClick = {
                         val source = if (motion.reduceMotion) null else view
                         if (AppLauncher.launch(context, entry, source, bounds.rect) != LaunchResult.Started) {
-                            Toast.makeText(context, R.string.launch_failed, Toast.LENGTH_SHORT).show()
+                            messages.show(MessageKind.Failure, R.string.launch_failed)
                             viewModel.refresh()
+                        } else {
+                            viewModel.recordLaunch(entry)
                         }
                     },
                     onLongClick = press.trigger,
