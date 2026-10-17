@@ -18,7 +18,10 @@ rootProject.name = "Atrium"
 
 include(
     ":app",
+    ":core:color",
+    ":core:color-native",
     ":core:model",
+    ":core:ui",
     ":core:data",
     ":core:theme",
     ":core:navigation",
