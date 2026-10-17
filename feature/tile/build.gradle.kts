@@ -25,10 +25,12 @@ kotlin {
 dependencies {
     implementation(project(":core:model"))
     implementation(project(":core:data"))
+    implementation(project(":core:color-native"))
     implementation(libs.androidx.core.ktx)
     implementation(libs.wear.tiles)
     implementation(libs.protolayout)
     implementation(libs.protolayout.material3)
     implementation(libs.protolayout.expression)
     implementation(libs.guava)
+    testImplementation(libs.junit)
 }
