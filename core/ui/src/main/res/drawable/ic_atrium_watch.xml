@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Atrium-drawn 24dp glyph; no icon library dependency. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
+    <path android:fillColor="#FFFFFFFF" android:pathData="M16,6.4L15,1H9L8,6.4C6.2,7.8 5,9.8 5,12s1.2,4.2 3,5.6L9,23h6l1,-5.4c1.8,-1.4 3,-3.4 3,-5.6S17.8,7.8 16,6.4zM12,17c-2.8,0 -5,-2.2 -5,-5s2.2,-5 5,-5s5,2.2 5,5S14.8,17 12,17z" />
+</vector>
