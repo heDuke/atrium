@@ -23,5 +23,8 @@ kotlin {
 }
 
 dependencies {
+    // ThemeSource / WearColorRoles live in the pure-Kotlin color module.
+    api(project(":core:color"))
     testImplementation(libs.junit)
+    testImplementation(libs.icu4j)
 }

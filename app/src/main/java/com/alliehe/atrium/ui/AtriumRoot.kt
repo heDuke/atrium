@@ -20,6 +20,11 @@ import com.alliehe.feature.drawer.SearchRoute
 import com.alliehe.feature.settings.HiddenAppsRoute
 import com.alliehe.feature.settings.OnboardingRoute
 import com.alliehe.feature.settings.SettingsRoute
+import com.alliehe.feature.settings.ThemeRoute
+import com.alliehe.core.ui.LocalMessageHost
+import com.alliehe.core.ui.MessageHost
+import com.alliehe.core.ui.MessageHostDialog
+import androidx.compose.runtime.CompositionLocalProvider
 
 @Composable
 fun AtriumRoot(
@@ -43,10 +48,12 @@ fun AtriumRoot(
         }
     }
 
+    val messages = remember { MessageHost() }
+    CompositionLocalProvider(LocalMessageHost provides messages) {
     AppScaffold {
         SwipeDismissableNavHost(navController = navController, startDestination = startDestination) {
             composable(Routes.ONBOARDING) {
-                OnboardingRoute(onFinished = {
+                OnboardingRoute(blockExit = homeSession, onFinished = {
                     navController.navigate(Routes.DRAWER) {
                         popUpTo(Routes.ONBOARDING) { inclusive = true }
                         launchSingleTop = true
@@ -57,6 +64,7 @@ fun AtriumRoot(
                 DrawerRoute(
                     onOpenSettings = { navController.navigate(Routes.SETTINGS) { launchSingleTop = true } },
                     onOpenSearch = { navController.navigate(Routes.SEARCH) { launchSingleTop = true } },
+                    onOpenHidden = { navController.navigate(Routes.HIDDEN) { launchSingleTop = true } },
                     onOpenActions = { componentKey ->
                         navController.currentBackStackEntry?.savedStateHandle?.set("actions_target", componentKey)
                         navController.navigate(Routes.ACTIONS) { launchSingleTop = true }
@@ -72,12 +80,27 @@ fun AtriumRoot(
                     viewModel = drawerViewModel,
                 )
             }
-            composable(Routes.SEARCH) { SearchRoute() }
+            composable(Routes.SEARCH) {
+                SearchRoute(onOpenActions = { componentKey ->
+                    // ActionsScreen reads its target from the drawer entry (shared DrawerViewModel).
+                    runCatching { navController.getBackStackEntry(Routes.DRAWER) }.getOrNull()?.let { drawer ->
+                        drawer.savedStateHandle["actions_target"] = componentKey
+                        navController.navigate(Routes.ACTIONS) { launchSingleTop = true }
+                    }
+                })
+            }
             composable(Routes.SETTINGS) {
-                SettingsRoute(onOpenHidden = { navController.navigate(Routes.HIDDEN) { launchSingleTop = true } })
+                SettingsRoute(
+                    onOpenHidden = { navController.navigate(Routes.HIDDEN) { launchSingleTop = true } },
+                    onOpenTheme = { navController.navigate(Routes.THEME) { launchSingleTop = true } },
+                )
             }
             composable(Routes.HIDDEN) { HiddenAppsRoute() }
+            composable(Routes.THEME) { ThemeRoute() }
         }
+        // Replaces Toasts: one confirmation dialog host for every screen.
+        MessageHostDialog(messages)
+    }
     }
     // Register after the host so this handler wins only at Home's root.
     BackHandler(enabled = homeSession && backStackEntry?.destination?.route == Routes.DRAWER) { }

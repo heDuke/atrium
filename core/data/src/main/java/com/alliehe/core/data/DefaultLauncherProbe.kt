@@ -1,4 +1,4 @@
-package com.alliehe.feature.settings
+package com.alliehe.core.data
 
 import android.app.role.RoleManager
 import android.content.Context

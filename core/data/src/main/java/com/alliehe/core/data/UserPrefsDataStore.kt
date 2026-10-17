@@ -8,7 +8,9 @@ import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.alliehe.core.color.ThemeSource
 import com.alliehe.core.model.DrawerLayoutMode
+import com.alliehe.core.model.LayoutDensity
 import com.alliehe.core.model.PerformanceMode
 import com.alliehe.core.model.UserPrefs
 import kotlinx.coroutines.flow.first
@@ -24,12 +26,21 @@ internal object UserPrefsKeys {
     val FAVORITES = stringSetPreferencesKey("favorites")
     val HIDDEN = stringSetPreferencesKey("hidden")
     val DRAWER_LAYOUT = stringPreferencesKey("drawer_layout")
+    val LAYOUT_DENSITY = stringPreferencesKey("layout_density")
     val PERFORMANCE_MODE = stringPreferencesKey("performance_mode")
     val LAST_NON_SAVER = stringPreferencesKey("last_non_saver")
     val REDUCE_MOTION = booleanPreferencesKey("reduce_motion")
     val ONBOARDING_DONE = booleanPreferencesKey("onboarding_done")
     val SEED_COLOR = longPreferencesKey("seed_color")
+    val THEME_SOURCE = stringPreferencesKey("theme_source")
+    val THEMED_ICONS = booleanPreferencesKey("themed_icons")
+    /** Newline-separated component keys (keys never contain '\n'). */
+    val RECENTS = stringPreferencesKey("recents")
+    val HONEYCOMB_ORDER = stringPreferencesKey("honeycomb_order")
 }
+
+internal fun String?.toKeyList(): List<String> = this?.split('\n')?.filter { it.isNotEmpty() }.orEmpty()
+internal fun List<String>.toKeyString(): String = joinToString("\n")
 
 internal fun Preferences.toUserPrefs(): UserPrefs {
     val performance = enumValueOr(this[UserPrefsKeys.PERFORMANCE_MODE], PerformanceMode.Balanced)
@@ -41,11 +52,16 @@ internal fun Preferences.toUserPrefs(): UserPrefs {
         favoritePackages = this[UserPrefsKeys.FAVORITES].orEmpty(),
         hiddenPackages = this[UserPrefsKeys.HIDDEN].orEmpty(),
         drawerLayout = enumValueOr(this[UserPrefsKeys.DRAWER_LAYOUT], DrawerLayoutMode.List),
+        layoutDensity = enumValueOr(this[UserPrefsKeys.LAYOUT_DENSITY], LayoutDensity.Standard),
         performanceMode = performance,
         lastNonSaverMode = lastNonSaver,
         reduceMotion = this[UserPrefsKeys.REDUCE_MOTION] ?: false,
         onboardingCompleted = this[UserPrefsKeys.ONBOARDING_DONE] ?: false,
         seedColorArgb = this[UserPrefsKeys.SEED_COLOR],
+        themeSource = enumValueOr(this[UserPrefsKeys.THEME_SOURCE], ThemeSource.System),
+        themedIcons = this[UserPrefsKeys.THEMED_ICONS] ?: false,
+        recentComponents = this[UserPrefsKeys.RECENTS].toKeyList(),
+        honeycombOrder = this[UserPrefsKeys.HONEYCOMB_ORDER].toKeyList(),
     )
 }
 

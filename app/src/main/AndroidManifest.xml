@@ -9,6 +9,18 @@
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.LAUNCHER" />
         </intent>
+        <!-- "Back to watch face" while Atrium holds HOME: find the system's HOME (face host). -->
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.HOME" />
+        </intent>
+        <!-- Settings → System settings shortcuts: only pages this build can resolve are shown. -->
+        <intent><action android:name="android.settings.WIFI_SETTINGS" /></intent>
+        <intent><action android:name="android.settings.BLUETOOTH_SETTINGS" /></intent>
+        <intent><action android:name="android.settings.DISPLAY_SETTINGS" /></intent>
+        <intent><action android:name="android.settings.SOUND_SETTINGS" /></intent>
+        <intent><action android:name="android.intent.action.POWER_USAGE_SUMMARY" /></intent>
+        <intent><action android:name="android.settings.SETTINGS" /></intent>
     </queries>
 
     <application

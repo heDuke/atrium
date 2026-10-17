@@ -1,41 +1,51 @@
 package com.alliehe.feature.watchface
 
+import android.graphics.Bitmap
+import com.alliehe.core.color.nativeimpl.NativeSchemeGenerator
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+
 /**
- * Phase 5 WFF stub: export seed ARGB for theme bridging via `:app`.
+ * Watch-face seed for theming, exposed as a [StateFlow] so the theme re-colours as soon as a seed is
+ * published (no polling, no restart).
  *
- * Full Watch Face Format XML / binary assets land when designer assets are ready
- * (see `docs/WFF.md`). Until then [currentSeedArgb] returns null unless a seed
- * was [publishSeedArgb] at runtime.
+ * Sources, highest first: a runtime [publishSeedArgb] / [publishFromBitmap] (Atrium's own face or an
+ * editor preview), then the seed embedded in Atrium's WFF package (none ships yet, see `docs/WFF.md`).
  *
- * `:core:theme` must never depend on this module — inject through `:app` only.
+ * `:core:theme` must never depend on this module — `:app` combines it into the theme inputs.
  */
 object WatchFaceSeed {
-    @Volatile
-    private var publishedSeedArgb: Long? = null
+    private val published = MutableStateFlow<Int?>(null)
 
-    /**
-     * Current watch-face seed as ARGB (`0xAARRGGBB` in the low 32 bits).
-     * Null → callers fall back to [com.alliehe.core.model.UserPrefs.seedColorArgb].
-     */
-    fun currentSeedArgb(): Long? = publishedSeedArgb ?: readEmbeddedWffSeedOrNull()
+    /** Current seed (`0xAARRGGBB`) or null → theme falls back to the user seed / brand. */
+    val seed: StateFlow<Int?> = published.asStateFlow()
 
-    /**
-     * Publish or clear a seed from a future WFF editor / face service.
-     * Pass null to clear the runtime override.
-     */
-    fun publishSeedArgb(argb: Long?) {
-        publishedSeedArgb = argb
+    fun currentSeedArgb(): Int? = published.value ?: readEmbeddedWffSeedOrNull()
+
+    /** Publish (or clear with null) a seed colour. */
+    fun publishSeedArgb(argb: Int?) {
+        published.value = argb ?: readEmbeddedWffSeedOrNull()
     }
 
-    /** Clears a runtime override (tests / reset). Does not affect embedded WFF. */
+    /**
+     * Derives the seed from a rendered face / background image via the native extractor
+     * (≤ 64×64 sampling, no pixel copy). Gray or empty images clear the seed. Returns the seed.
+     */
+    fun publishFromBitmap(bitmap: Bitmap, generator: NativeSchemeGenerator): Int? {
+        val seed = generator.dominantColor(bitmap)
+        publishSeedArgb(seed)
+        return seed
+    }
+
+    /** Clears a runtime override (tests / reset). Does not affect an embedded WFF seed. */
     fun clearPublishedSeed() {
-        publishedSeedArgb = null
+        published.value = readEmbeddedWffSeedOrNull()
     }
 
     /**
-     * Stub: embedded WFF XML is not shipped yet.
-     * When assets land under `feature/watchface/src/main/res/raw/` (or equivalent),
-     * parse the designer seed here and return it.
+     * No WFF package ships yet. When one does, return its designer seed here (parsed once) — or derive it
+     * from its preview image with [publishFromBitmap].
      */
-    private fun readEmbeddedWffSeedOrNull(): Long? = null
+    private fun readEmbeddedWffSeedOrNull(): Int? = null
 }

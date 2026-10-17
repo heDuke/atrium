@@ -1,5 +1,42 @@
 # 修复验证记录与设备验收
 
+## Theme v2（`feat/theme-v2`，2026-10-17）
+
+### 本地已执行（JDK 17 + Android SDK/NDK 29.0.14206865，构建机）
+
+- `bash gradlew assembleDebug assembleRelease testDebugUnitTest :core:color:test lint :benchmark:assembleBenchmark`：
+  通过；58 个 JVM 单元测试全部通过；各模块 Lint 0 错误（app 37 条警告均为既有的依赖更新/未用资源类）。
+- `bash scripts/verify-native-host.sh`：C++ 颜色核心（g++ `-std=c++17 -Werror -ffp-contract=off`）
+  与共享金样 `core/color/golden/color.golden` 对比 18 行、0 失败，
+  并检查黑色背景与对比度不变式。Kotlin `GoldenTest` 使用同一份金样（每通道 ±1）。
+- `bash scripts/check-no-horologist.sh`：通过（现同时禁止 phone M3、material-kolor、MCU）。
+- Release APK 中 `libatrium_color.so` 已剥离：arm64 约 240 KB，armv7 约 154 KB，x86_64 约 239 KB。
+
+### 金样再生成
+
+颜色算法有意变更时：`bash gradlew :core:color:test -Patrium.updateGolden=true`，
+然后运行 `bash scripts/verify-native-host.sh` 确认 C++ 与新金样一致，再提交金样差异。
+
+### 需要设备/模拟器（未执行；构建机无 KVM 权限）
+
+| 项目 | 命令/方法 | 预期 |
+|---|---|---|
+| JNI 加载与 Kotlin/原生一致性 | `bash gradlew :core:color-native:connectedDebugAndroidTest` | `NativeParityTest` 全部通过（各 ABI 加载成功、配色 ±1、位图提取一致） |
+| 提取耗时 | `:benchmark:connectedBenchmarkAndroidTest`（`ColorExtractionBenchmark`） | `AtriumExtractMinMs`/平均 < 1 ms（arm64 NEON 路径） |
+| 系统动态取色 | 开关系统「动态主题」 | 「系统」来源实时切换，无需重启；不可用时主题页提示并回退 |
+| 主题页 | 8 个预设、品牌、实时预览 | 选择即生效；Tile 在主题变更后刷新 |
+| 主题化图标 | 单色自适应图标 / 普通图标 | 单色层着色，圆形遮罩；Honeycomb 单元按图标主色着色 |
+| 拼音搜索/排序 | 中文名应用 | 按拼音排序；全拼与首字母（如 `wx`）可搜到 |
+| 最近使用 | 启动若干应用 | 列表/网格顶部显示最近 5 个；设置中可清除 |
+| Honeycomb 重排 | 长按拖动到边缘 | 边缘自动平移，松手后顺序持久化；橡皮筋边界；TalkBack 前移/后移 |
+| SwipeToReveal | 列表行左滑 | 「更多」进入操作页、「置顶」切换；TalkBack 自定义操作仍在 |
+| 快捷方式 | 设为默认 Home 后打开操作页 | 显示最多 4 个快捷方式并可启动；非默认 Home 时不显示 |
+| 返回表盘 | 默认 Home 时点击 | 回到表盘；非默认 Home 时不出现 |
+| 系统设置入口 | 设置页 | 仅显示能解析的系统页面，点击可打开 |
+| 确认对话框 | 置顶/隐藏/恢复/失败 | Wear M3 ConfirmationDialog 取代 Toast；隐藏恢复前有确认 |
+
+## 历史记录
+
 日期：2026-10-06。基线：`768f1fc`。
 
 ## 已执行
@@ -73,7 +110,7 @@ Grid 按整行缩放/淡出，内部按钮不单独再变形；具体圆屏裁�
 
 ## 有意保留的范围
 
-- WFF 和 seed-color 仍为明确记录的 stub，不声称已交付表盘或种子生成配色。
+- WFF 表盘本身仍为 stub；种子配色已由 Theme v2 实现（见上节）。
 - Tile 仍为打开抽屉的快捷入口，不新增收藏捷径。
 - 省电/性能档位控制动效及 Tile 刷新提示，不保证测得的电池节省或硬件性能变化。
 - 未安装应用的隐藏/收藏/置顶记录保留，隐藏管理只显示仍安装的应用。

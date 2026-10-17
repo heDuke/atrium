@@ -34,6 +34,7 @@ dependencies {
     implementation(project(":core:theme"))
     implementation(project(":core:data"))
     implementation(project(":core:navigation"))
+    implementation(project(":core:ui"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)
@@ -52,4 +53,8 @@ dependencies {
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
     implementation(libs.hilt.navigation.compose)
+}
+
+dependencies {
+    testImplementation(libs.junit)
 }

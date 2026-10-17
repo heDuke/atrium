@@ -1,4 +1,4 @@
-name: Horologist ban
+name: Dependency ban (Horologist, phone M3, material-kolor, MCU)
 
 on:
   push:
@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Scan for Horologist
+      - name: Scan for banned dependencies
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq ripgrep

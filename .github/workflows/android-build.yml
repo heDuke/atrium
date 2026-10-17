@@ -35,8 +35,12 @@ jobs:
 
       # AGP resolves compileSdk's platform package and installs it when needed.
       # Do not assume its SDK Manager path is platforms;android-37.
-      - name: Install Build Tools
-        run: sdkmanager 'build-tools;36.0.0'
+      - name: Install Build Tools, NDK and CMake
+        # :core:color-native (clean-room HCT/scheme/extraction in C++17) needs the pinned NDK + CMake.
+        run: sdkmanager 'build-tools;36.0.0' 'ndk;29.0.14206865' 'cmake;3.22.1'
+
+      - name: Native color core host test (C++ vs shared golden)
+        run: bash scripts/verify-native-host.sh
 
       - name: Set up Gradle and cache
         id: gradle
@@ -65,9 +69,12 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+      - name: Compile Macrobenchmark module (runs on device only)
+        run: bash gradlew :benchmark:assembleBenchmark --no-daemon --stacktrace
+
       - name: Run unit tests
         if: ${{ !cancelled() && steps.gradle.outcome == 'success' }}
-        run: bash gradlew testDebugUnitTest --no-daemon --stacktrace
+        run: bash gradlew testDebugUnitTest :core:color:test --no-daemon --stacktrace
 
       - name: Run Android Lint
         if: ${{ !cancelled() && steps.gradle.outcome == 'success' }}
@@ -81,6 +88,7 @@ jobs:
           path: |
             **/build/reports/tests/**
             **/build/test-results/testDebugUnitTest/**
+            **/build/test-results/test/**
             **/build/reports/lint-results-debug.*
           if-no-files-found: warn
           retention-days: 14

@@ -3,13 +3,21 @@ package com.alliehe.feature.drawer
 import android.app.Activity
 import android.app.RemoteInput
 import android.content.ActivityNotFoundException
-import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.semantics
+import com.alliehe.core.theme.LocalAtriumMotion
+import com.alliehe.feature.drawer.layout.BoundsHolder
+import com.alliehe.feature.drawer.layout.rememberLongPress
+import com.alliehe.feature.drawer.layout.trackBounds
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -31,14 +39,24 @@ import androidx.wear.compose.material3.lazy.rememberTransformationSpec
 import androidx.wear.compose.material3.lazy.transformedHeight
 import androidx.wear.input.RemoteInputIntentHelper
 import com.alliehe.core.model.componentKey
-import com.alliehe.core.theme.TransformingContent
+import com.alliehe.core.ui.AppIcon
+import com.alliehe.core.ui.EmptyState
+import com.alliehe.core.ui.LocalMessageHost
+import com.alliehe.core.ui.MessageKind
+import com.alliehe.core.ui.R as UiR
 
 private const val SEARCH_INPUT_KEY = "search_query"
 
 @Composable
-fun SearchRoute(viewModel: SearchViewModel = hiltViewModel()) {
+fun SearchRoute(
+    onOpenActions: (String) -> Unit = {},
+    viewModel: SearchViewModel = hiltViewModel(),
+) {
+    val view = LocalView.current
+    val motion = LocalAtriumMotion.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val messages = LocalMessageHost.current
     val listState = rememberTransformingLazyColumnState()
     val spec = rememberTransformationSpec()
     val queryHint = stringResource(R.string.search_query_hint)
@@ -65,9 +83,9 @@ fun SearchRoute(viewModel: SearchViewModel = hiltViewModel()) {
                         try {
                             inputLauncher.launch(intent)
                         } catch (_: ActivityNotFoundException) {
-                            Toast.makeText(context, R.string.search_input_unavailable, Toast.LENGTH_SHORT).show()
+                            messages.show(MessageKind.Failure, R.string.search_input_unavailable)
                         } catch (_: SecurityException) {
-                            Toast.makeText(context, R.string.search_input_unavailable, Toast.LENGTH_SHORT).show()
+                            messages.show(MessageKind.Failure, R.string.search_input_unavailable)
                         }
                     },
                     modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).transformedHeight(this, spec),
@@ -92,30 +110,43 @@ fun SearchRoute(viewModel: SearchViewModel = hiltViewModel()) {
                         transformation = SurfaceTransformation(spec)) { Text(stringResource(R.string.catalog_retry)) }
                 }
             }
-            if (uiState.loading || uiState.results.isEmpty()) {
+            if (uiState.loading && uiState.results.isEmpty()) {
+                item { EmptyState(stringResource(R.string.catalog_loading), spec) }
+            } else if (uiState.results.isEmpty()) {
                 item {
-                    TransformingContent(SurfaceTransformation(spec), Modifier.fillMaxWidth().transformedHeight(this, spec)) {
-                        Text(stringResource(when {
-                            uiState.loading -> R.string.catalog_loading
-                            uiState.query.isBlank() -> R.string.drawer_empty_hint
-                            else -> R.string.search_no_results
-                        }), textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
-                    }
+                    if (uiState.query.isBlank()) EmptyState(stringResource(R.string.drawer_empty_hint), spec)
+                    else EmptyState(stringResource(R.string.search_no_results), spec,
+                        actionLabel = stringResource(R.string.search_clear), onAction = { viewModel.onQueryChange("") },
+                        actionIcon = UiR.drawable.ic_atrium_restore)
                 }
-            } else items(uiState.results, key = { it.componentKey }) { entry ->
+            if (uiState.results.isNotEmpty()) items(uiState.results, key = { it.componentKey }) { entry ->
+                val bounds = remember { BoundsHolder() }
+                val press = rememberLongPress { onOpenActions(entry.componentKey) }
+                val actionsLabel = stringResource(R.string.drawer_app_actions_for, entry.label)
                 Button(
                     onClick = {
-                        if (AppLauncher.launch(context, entry) != LaunchResult.Started) {
-                            Toast.makeText(context, R.string.launch_failed, Toast.LENGTH_SHORT).show()
+                        val source = if (motion.reduceMotion) null else view
+                        if (AppLauncher.launch(context, entry, source, bounds.rect) != LaunchResult.Started) {
+                            messages.show(MessageKind.Failure, R.string.launch_failed)
                             viewModel.refresh()
+                        } else {
+                            viewModel.recordLaunch(entry)
                         }
                     },
-                    modifier = Modifier.fillMaxWidth().transformedHeight(this, spec),
+                    onLongClick = press.trigger,
+                    onLongClickLabel = actionsLabel,
+                    modifier = Modifier.fillMaxWidth().transformedHeight(this, spec).then(press.modifier)
+                        .semantics {
+                            customActions = listOf(CustomAccessibilityAction(actionsLabel) {
+                                onOpenActions(entry.componentKey); true
+                            })
+                        },
                     transformation = SurfaceTransformation(spec),
-                    icon = { AppIcon(uiState.icons[entry.componentKey], entry.label) },
+                    icon = { AppIcon(entry, modifier = Modifier.trackBounds(bounds)) },
                     label = { Text(entry.label, maxLines = 2, overflow = TextOverflow.Ellipsis) },
                 )
             }
         }
     }
+}
 }

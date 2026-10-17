@@ -7,4 +7,5 @@ object Routes {
     const val SEARCH = "search"
     const val SETTINGS = "settings"
     const val ONBOARDING = "onboarding"
+    const val THEME = "theme"
 }

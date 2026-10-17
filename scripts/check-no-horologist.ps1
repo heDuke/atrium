@@ -1,10 +1,16 @@
-# Fails if any Horologist coordinate or import appears in the tree.
+# Fails if any banned dependency appears in the tree (see check-no-horologist.sh).
 $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent $PSScriptRoot
 $patterns = @(
     "androidx\.wear\.horologist",
     "com\.google\.android\.horologist",
-    "horologist-"
+    "horologist-",
+    "androidx\.compose\.material3",
+    "com\.materialkolor",
+    "material-kolor",
+    "materialkolor",
+    "material-color-utilities",
+    "com\.google\.android\.material\.color\.utilities"
 )
 
 $hits = @()
@@ -21,9 +27,9 @@ Get-ChildItem -Path $root -Recurse -File -Include *.kt,*.kts,*.toml,*.gradle,*.x
     }
 
 if ($hits.Count -gt 0) {
-    Write-Host "Horologist ban violated:"
+    Write-Host "Dependency ban violated:"
     $hits | ForEach-Object { Write-Host " - $_" }
     exit 1
 }
 
-Write-Host "OK: no Horologist artifacts found."
+Write-Host "OK: no Horologist / phone M3 / material-kolor / MCU artifacts found."
