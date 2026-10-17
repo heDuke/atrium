@@ -34,6 +34,7 @@ import androidx.wear.compose.foundation.lazy.rememberTransformingLazyColumnState
 import androidx.wear.compose.material3.Button
 import androidx.wear.compose.material3.ButtonDefaults
 import androidx.wear.compose.material3.Card
+import androidx.wear.compose.material3.CompactButtonDefaults
 import androidx.wear.compose.material3.Icon
 import androidx.wear.compose.material3.ListHeader
 import androidx.wear.compose.material3.MaterialTheme
@@ -162,7 +163,7 @@ private fun PresetSwatch(color: Color, selected: Boolean, name: String, onSelect
         ) {
             if (selected) {
                 Icon(painterResource(UiR.drawable.ic_atrium_check), contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(20.dp))
+                    tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(CompactButtonDefaults.ExtraSmallIconSize))
             }
         }
     }
